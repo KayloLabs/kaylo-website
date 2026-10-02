@@ -20,3 +20,11 @@ Download links have not been invented. Get started and professional enquiries cu
 Landing sections live in `components/`, global design rules in `app/globals.css`. Images in `public/images` were generated with the built-in image generation tool. Exact briefs are recorded in `ASSET_PROMPTS.json`. The app repository and saved APK are separate and unchanged by this website task.
 
 Hosting is configured as a private static Site in `.openai/hosting.json`. No analytics, payment collection, account creation or newsletter backend is attached to this marketing site.
+
+## Professional applications
+
+The website now has `/services/` and `/professionals/` pages. The application form POSTs to `/api/applications`, validates on the server, and stores submissions in the private Sites D1 `professional_applications` table. There is no public listing endpoint and no email is sent automatically. The Site owner can inspect applications using Sites database tools; applicants can request correction or deletion through the support email. New applications require contact consent. The submit reference also makes retrying the same submission idempotent.
+
+Next.js still generates the public pages; a small Cloudflare Worker serves those assets and handles the form endpoint. `npm run build` packages both. Run `npx wrangler d1 migrations apply kaylo-professionals --local`, then `npm run preview` for the full local experience at port 3001 (the Next development server alone does not host the Worker API). Production migrations are applied by Sites.
+
+The exact app SVG layers and splash choreography power `components/Logo.tsx`. The interactive phone uses original app PNG assets. Its bookings/messages/profile changes are an isolated in-memory demo and do not touch real accounts, payments, or providers.
