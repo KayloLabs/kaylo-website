@@ -1,4 +1,4 @@
 import {mkdir,rm,cp,copyFile,writeFile} from 'node:fs/promises';
 await rm('dist',{recursive:true,force:true});await mkdir('dist/server',{recursive:true});await mkdir('dist/.openai',{recursive:true});
-await cp('out','dist/client',{recursive:true});await copyFile('server/worker.mjs','dist/server/index.js');await copyFile('.openai/hosting.json','dist/.openai/hosting.json');await cp('drizzle','dist/.openai/drizzle',{recursive:true});
+await cp('out','dist/client',{recursive:true});await copyFile('server/worker.mjs','dist/server/index.js');await copyFile('server/kaylo-public-config.json','dist/server/kaylo-public-config.json');await copyFile('.openai/hosting.json','dist/.openai/hosting.json');await cp('drizzle','dist/.openai/drizzle',{recursive:true});
 await writeFile('dist/server/wrangler.json',JSON.stringify({name:'kaylo-website',main:'index.js',compatibility_date:'2026-05-15',assets:{directory:'../client',binding:'ASSETS',run_worker_first:['/api/*']},d1_databases:[{binding:'DB',database_name:'kaylo-professionals',database_id:'00000000-0000-4000-8000-000000000000'}]}));

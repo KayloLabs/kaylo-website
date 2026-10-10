@@ -1,3 +1,4 @@
+import publicConfig from './kaylo-public-config.json' with {type:'json'};
 const skills=['Electrician','Plumber','Painter','Cleaner','Mechanic','AC technician','Appliance repair','Carpenter','Gardener','Farm services','Caregiver','Other'];
 const experienceOptions=['Less than 1 year','1–3 years','3–5 years','5+ years'];
 const json=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
@@ -18,6 +19,11 @@ export function validate(input){
 }
 export default {async fetch(request,env){
  const url=new URL(request.url);
+ if(url.pathname==='/api/kaylo-config'){
+  if(request.method!=='GET')return json({error:'Method not allowed.'},405);
+  // Explicit allowlist: no service-role key, SMTP secret or signing key may be returned.
+  return json({firebaseApiKey:env.KAYLO_FIREBASE_API_KEY||publicConfig.firebaseApiKey,supabaseUrl:env.KAYLO_SUPABASE_URL||publicConfig.supabaseUrl,supabaseAnonKey:env.KAYLO_SUPABASE_ANON_KEY||publicConfig.supabaseAnonKey});
+ }
  if(url.pathname!=='/api/applications')return env.ASSETS.fetch(request);
  if(request.method!=='POST')return json({error:'Method not allowed.'},405);
  const origin=request.headers.get('Origin');if(origin&&origin!==url.origin)return json({error:'Please submit from the Kaylo website.'},403);
