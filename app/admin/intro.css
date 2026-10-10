@@ -1,0 +1,13 @@
+.kaylo-intro{position:fixed;inset:0;z-index:1000;isolation:isolate;display:grid;place-items:center;min-height:100svh;overflow:hidden;padding:24px;background:var(--ops-paper,#f8f9f5);color:var(--ops-green,#286342);font-family:'DM Sans',sans-serif;outline:none}
+.kaylo-intro .kaylo-intro__sequence{display:flex;flex-direction:column;align-items:center}
+.kaylo-intro .kaylo-intro__stage{position:relative;width:150px;height:135px}
+.kaylo-intro .kaylo-intro__frame{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;will-change:transform,opacity}
+.kaylo-intro .kaylo-intro__frame>svg{display:block;width:56px;height:56px;flex-shrink:0;overflow:visible}
+.kaylo-intro .kaylo-intro__more{font-size:18px;line-height:1.3;font-weight:400;letter-spacing:-.02em;color:var(--ops-green,#286342)}
+.kaylo-intro .kaylo-intro__logo{display:flex;width:100px;height:83px}
+.kaylo-intro .kaylo-logo{width:100%;height:100%;fill:var(--ops-green,#286342)}
+.kaylo-intro .kaylo-logo .logo-dot{fill:var(--ops-muted,#6d786f)}
+.kaylo-intro .kaylo-intro__progress{width:130px;height:1.5px;margin-top:24px;overflow:hidden;border-radius:2px;background:var(--ops-line,#e0e6de)}
+.kaylo-intro .kaylo-intro__progress>span{display:block;width:100%;height:100%;transform-origin:left;background:var(--ops-green,#286342)}
+@media(prefers-reduced-motion:reduce){.kaylo-intro .kaylo-intro__frame{transform:none!important}.kaylo-intro .kaylo-intro__progress>span{transform:none!important}}
+.kaylo-intro[data-reduced=true] .kaylo-intro__frame{transform:none!important}
