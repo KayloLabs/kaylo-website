@@ -36,10 +36,12 @@ function ServiceIcon({service}:{service:Service}){
  </svg>;
 }
 
-export function KayloIntro({onComplete}:{onComplete:()=>void}){
+export function KayloIntro({onComplete,onReveal,label='Opening Kaylo Admin',curtain=false}:{onComplete:()=>void;onReveal?:()=>void;label?:string;curtain?:boolean}){
  const container=useRef<HTMLElement>(null);
  const callback=useRef(onComplete);
  const finished=useRef(false);
+ const revealCallback=useRef(onReveal);
+ useEffect(()=>{revealCallback.current=onReveal;},[onReveal]);
  const [scene,setScene]=useState(0);
  const [reduced,setReduced]=useState(false);
  const [closing,setClosing]=useState(false);
@@ -57,8 +59,8 @@ export function KayloIntro({onComplete}:{onComplete:()=>void}){
   const clear=()=>{timers.forEach(timer=>window.clearTimeout(timer));timers=[];};
   const finish=()=>{
    if(ending||finished.current)return;
-   ending=true;clear();setClosing(true);
-   timers.push(window.setTimeout(complete,preference.matches?0:200));
+   ending=true;clear();setClosing(true);revealCallback.current?.();
+   timers.push(window.setTimeout(complete,preference.matches?0:curtain?850:200));
   };
   const play=()=>{
    if(ending||finished.current)return;
@@ -76,10 +78,10 @@ export function KayloIntro({onComplete}:{onComplete:()=>void}){
   container.current?.focus({preventScroll:true});
   play();preference.addEventListener('change',play);window.addEventListener('keydown',keydown);
   return()=>{clear();preference.removeEventListener('change',play);window.removeEventListener('keydown',keydown);};
- },[complete]);
+ },[complete,curtain]);
  const service=scene>0&&scene<=services.length?services[scene-1]:null;
  const isLastScene=scene===services.length+1;
- return <motion.section ref={container} tabIndex={-1} className="kaylo-intro" role="dialog" aria-modal="true" aria-label="Opening Kaylo Admin" data-reduced={reduced} initial={false} animate={{opacity:closing?0:1}} transition={{duration:reduced?0:.2,ease:'easeOut'}}>
+ return <motion.section ref={container} tabIndex={-1} className={`kaylo-intro ${curtain?'site-intro':''}`} role="dialog" aria-modal="true" aria-label={label} data-reduced={reduced} initial={false} animate={curtain&&!reduced?{y:closing?'-100%':'0%'}:{opacity:closing?0:1}} transition={{duration:reduced?0:curtain?.8:.2,ease:[.76,0,.24,1]}}>
   <div className="kaylo-intro__sequence" aria-hidden="true">
    <div className="kaylo-intro__stage">
     <AnimatePresence initial={false}>

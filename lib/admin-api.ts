@@ -1,3 +1,4 @@
+import publicConfig from '../server/kaylo-public-config.json' with {type:'json'};
 export type PortalConfig = { firebaseApiKey: string; supabaseUrl: string; supabaseAnonKey: string };
 export type Admin = { email: string; role: 'admin' | 'reviewer' };
 export type Status = 'submitted' | 'under_review' | 'changes_requested' | 'approved' | 'rejected';
@@ -37,43 +38,67 @@ async function readResponse(response:Response) {
   return body;
 }
 export async function loadPortalConfig():Promise<PortalConfig> {
-  const r=await fetch('/api/kaylo-config',{cache:'no-store'});
-  const config=await readResponse(r);
+  const config:PortalConfig={firebaseApiKey:publicConfig.firebaseApiKey,supabaseUrl:publicConfig.supabaseUrl,supabaseAnonKey:publicConfig.supabaseAnonKey};
   if(!config.firebaseApiKey||!config.supabaseUrl||!config.supabaseAnonKey) throw new PortalError(messages.PORTAL_NOT_CONFIGURED);
   return config;
 }
 // Tokens stay in memory. Signing out or closing/reloading the tab clears them.
 export class AdminSession {
   private token=''; private refresh=''; private expires=0; private refreshing:Promise<void>|null=null;
+  private generation=0;
+  private reads=new Map<string,Promise<unknown>>();
   private config:PortalConfig;
   constructor(config:PortalConfig){this.config=config;}
   async signIn(email:string,password:string):Promise<Admin> {
+    this.signOut();
+    const generation=this.generation;
     const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(this.config.firebaseApiKey)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.trim(),password,returnSecureToken:true})});
     const b=await r.json();
+    if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
     if(!r.ok) throw new PortalError(b.error?.message==='TOO_MANY_ATTEMPTS_TRY_LATER'?'Too many attempts. Please wait before trying again.':'Unable to sign in. Check your administrator email and password.');
     this.token=b.idToken;this.refresh=b.refreshToken;this.expires=Date.now()+Number(b.expiresIn)*1000;
     try { const result=await this.request<{admin:Admin}>('session'); return result.admin; }
-    catch(error){this.signOut();throw error;}
+    catch(error){if(generation===this.generation)this.signOut();throw error;}
   }
-  signOut(){this.token='';this.refresh='';this.expires=0;}
+  signOut(){this.generation++;this.token='';this.refresh='';this.expires=0;this.refreshing=null;this.reads.clear();}
   private async renewToken(){
+      const generation=this.generation;
       const currentRefresh=this.refresh;
       const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(this.config.firebaseApiKey)}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:currentRefresh})});
       const b=await r.json();
+      if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
       if(!r.ok||this.refresh!==currentRefresh){this.signOut();throw new PortalError('Please sign in again.',401);}
       this.token=b.id_token;this.refresh=b.refresh_token;this.expires=Date.now()+Number(b.expires_in)*1000;
   }
   private async accessToken(){
     if(!this.token) throw new PortalError('Please sign in again.',401);
     if(this.expires-Date.now()<60000){
-      this.refreshing??=this.renewToken().finally(()=>{this.refreshing=null;});
+      if(!this.refreshing){
+        const pending=this.renewToken().finally(()=>{if(this.refreshing===pending)this.refreshing=null;});
+        this.refreshing=pending;
+      }
       await this.refreshing;
     }
     return this.token;
   }
-  async request<T>(action:string,params:Record<string,unknown>={}):Promise<T>{
+  request<T>(action:string,params:Record<string,unknown>={}):Promise<T>{
+    // Share only identical reads already in flight. Every later request still
+    // checks the live backend role/session; writes and signed document links
+    // are never cached or coalesced.
+    const key=['session','list','detail'].includes(action)?JSON.stringify({action,...params}):null;
+    if(key){const pending=this.reads.get(key);if(pending)return pending as Promise<T>;}
+    else this.reads.clear();
+    const pending=this.send<T>(action,params).finally(()=>{if(key&&this.reads.get(key)===pending)this.reads.delete(key);});
+    if(key)this.reads.set(key,pending);
+    return pending;
+  }
+  private async send<T>(action:string,params:Record<string,unknown>):Promise<T>{
+    const generation=this.generation;
     const token=await this.accessToken();
-    return readResponse(await fetch(`${this.config.supabaseUrl}/functions/v1/admin-applications`,{method:'POST',headers:{'Content-Type':'application/json',apikey:this.config.supabaseAnonKey,Authorization:`Bearer ${token}`},body:JSON.stringify({action,...params}),cache:'no-store'}));
+    if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
+    const result=await readResponse(await fetch(`${this.config.supabaseUrl}/functions/v1/admin-applications`,{method:'POST',headers:{'Content-Type':'application/json',apikey:this.config.supabaseAnonKey,Authorization:`Bearer ${token}`},body:JSON.stringify({action,...params}),cache:'no-store'}));
+    if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
+    return result as T;
   }
 }
 export async function correctionRequest(config:PortalConfig,body:FormData|{token:string}):Promise<{application:Correction}>{

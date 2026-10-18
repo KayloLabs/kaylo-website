@@ -1,6 +1,6 @@
 # Kaylo website
 
-A responsive Next.js 16 / React 19 landing page, built with TypeScript, Tailwind CSS 4, Motion and Lucide. Static export; no server or secret environment values are required.
+A responsive Next.js 16 / React 19 landing page, built with TypeScript, Tailwind CSS 4, Motion and Lucide. Static export for GitHub Pages, with Firebase authentication and the existing protected Supabase backend.
 
 ## Run
 
@@ -11,20 +11,36 @@ A responsive Next.js 16 / React 19 landing page, built with TypeScript, Tailwind
 
 ## Design and interactions
 
-Ivory, natural green and earthy neutrals, self-hosted Instrument Serif and DM Sans, original editorial imagery. Service tabs show Home, Farm and Care; service buttons open accessible Radix dialogs. The phone is an interactive illustrative preview with four screens. Navigation collapses on mobile, scroll motion respects reduced-motion preferences, and privacy/terms dialogs are keyboard accessible.
+Ivory, natural green and earthy neutrals, self-hosted Plus Jakarta Sans and Hanken Grotesk, original editorial imagery. Service tabs show Home, Farm and Care; service buttons open accessible Radix dialogs. The phone is an interactive illustrative preview with Home, Bookings, Care, Messages and Profile screens. Navigation collapses on mobile, scroll motion respects reduced-motion preferences, and privacy/terms dialogs are keyboard accessible. The service intro plays once per tab; the footer uses the original wordmark and symbol, with a pale wave separating the closing sections.
 
-Download links have not been invented. Get started and professional enquiries currently open a contact path to kayloapp@gmail.com. Replace these with official app store and partner onboarding links once available. The phone's sample booking and conversation are illustrative. Artwork depicts generated people, not actual Kaylo providers or testimonials. Verify all service availability and operational brand claims before public launch.
+Download links have not been invented. Get started uses the contact path; Join as a Professional opens the working enquiry form. Replace these with official app store and partner onboarding links once available. The phone's sample booking and conversation are illustrative. Artwork depicts generated people, not actual Kaylo providers or testimonials. Verify all service availability and operational brand claims before public launch.
 
 ## Content
 
 Landing sections live in `components/`, global design rules in `app/globals.css`. Images in `public/images` were generated with the built-in image generation tool. Exact briefs are recorded in `ASSET_PROMPTS.json`. The app repository and saved APK are separate and unchanged by this website task.
 
-Hosting is configured as a private static Site in `.openai/hosting.json`. No analytics, payment collection, account creation or newsletter backend is attached to this marketing site.
+The public website is hosted on GitHub Pages. The original Sites configuration remains in `.openai/hosting.json` for the older deployment. No analytics, payment collection, account creation or newsletter backend is attached to this marketing site.
 
 ## Professional applications
 
-The website now has `/services/` and `/professionals/` pages. The application form POSTs to `/api/applications`, validates on the server, and stores submissions in the private Sites D1 `professional_applications` table. There is no public listing endpoint and no email is sent automatically. The Site owner can inspect applications using Sites database tools; applicants can request correction or deletion through the support email. New applications require contact consent. The submit reference also makes retrying the same submission idempotent.
+The current form submits directly to the validated Supabase RPC `submit_professional_lead`. New website enquiries are stored in the private `professional_application_leads` table. Anonymous clients can submit but cannot read, change, or delete records. Receipts make retries idempotent. These short enquiries remain separate from document-complete Partner app registrations reviewed in `/admin/`. No automatic enquiry email is sent. The Supabase project owner can view new enquiries in Table Editor.
 
-Next.js still generates the public pages; a small Cloudflare Worker serves those assets and handles the form endpoint. `npm run build` packages both. Run `npx wrangler d1 migrations apply kaylo-professionals --local`, then `npm run preview` for the full local experience at port 3001 (the Next development server alone does not host the Worker API). Production migrations are applied by Sites.
+Existing submissions in the original Sites D1 `professional_applications` table remain there; no data has been removed. The original Worker remains available for that older deployment through `npm run build`.
 
 The exact app SVG layers and splash choreography power `components/Logo.tsx`. The interactive phone uses original app PNG assets. Its bookings/messages/profile changes are an isolated in-memory demo and do not touch real accounts, payments, or providers.
+
+## GitHub Pages deployment
+
+Live site: https://kaylolabs.github.io/kaylo-website/
+
+Admin: https://kaylolabs.github.io/kaylo-website/admin/
+
+Build using `NEXT_PUBLIC_BASE_PATH=/kaylo-website npm run build:pages`. Publish **only the contents of `out/`**, including `.nojekyll`, to the `main` branch of `KayloLabs/kaylo-website`. That repository holds compiled public assets, not private source history or server credentials. GitHub Pages serves its root directory.
+
+All public links, images, fonts, and the admin portal support the project path. The frontend contains only the public Firebase API key and Supabase anon key. Firebase tokens stay in memory and administrator permission is checked by the existing Edge Functions. Private documents and review decisions remain protected by the backend.
+
+Set Supabase `KAYLO_PORTAL_URL=https://kaylolabs.github.io/kaylo-website/` after publication. The email URL helpers preserve the project subpath for administrator and applicant correction links.
+
+For the identical local build run `NEXT_PUBLIC_BASE_PATH=/kaylo-website node scripts/preview-admin.mjs` and open http://127.0.0.1:3100/kaylo-website/admin/. This static preview avoids development watcher limits.
+
+Checks: `npm run typecheck`, `node --experimental-strip-types --test lib/*.test.ts`, and `node --test server/worker.test.mjs`. Database migration and rollback tests live in the app repository under `supabase/migrations/0028_professional_application_leads.sql` and `supabase/tests/professional_application_leads.sql`.
