@@ -4,4 +4,4 @@
 :HL["/kaylo-website/_next/static/css/9f0cdeb987cecbc8.css","style"]
 :HL["/kaylo-website/_next/static/css/9a7854e5a4af740a.css","style"]
 :HL["/kaylo-website/images/craftsman.jpg","image"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"professionals","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"H4Q9cAn0bhZNb1JSq9k2G"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"professionals","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"3ROfgjRKLOzuLIpfd__CE"}
