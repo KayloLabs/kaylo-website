@@ -252,14 +252,15 @@ export function WorkerApplication(){
       {justSubmitted?<><CheckCircle2 size={44} strokeWidth={1.3}/><p className="eyebrow">APPLICATION RECEIVED</p><h2>Your skill.<br/>A new beginning.</h2>
         <p>Thank you. Your details and all five documents have reached Kaylo. Keep your reference; it is how you check progress and how support finds your application.</p></>
       :<><p className="eyebrow">YOUR APPLICATION</p><h2>Check your<br/><em>application status.</em></h2><p>Enter your application reference to see its status. Personal details and documents are never displayed here.</p></>}
-      {lookup.reference&&(justSubmitted||result)&&<div className="app-reference"><span>Application reference</span><strong>{lookup.reference}</strong><CopyReference reference={lookup.reference}/></div>}
-      <form className="app-status-form" noValidate onSubmit={(e:FormEvent)=>{e.preventDefault();void runLookup(lookup.reference);}}>
-        <div className="app-field"><label htmlFor="reference">Application reference</label><input id="reference" value={lookup.reference} onChange={e=>setLookup(s=>({...s,reference:e.target.value,result:null,error:''}))} autoCapitalize="characters" autoComplete="off" spellCheck={false} maxLength={80} disabled={lookup.busy}/></div>
-        <button className="button" disabled={lookup.busy||!config}>{lookup.busy?<><LoaderCircle className="form-spinner" size={17}/> Checking…</>:<><Search size={17}/> Check application status</>}</button>
-      </form>
+      {justSubmitted
+        ?<div className="app-reference"><span>Application reference</span><strong>{lookup.reference}</strong><CopyReference reference={lookup.reference}/></div>
+        :<form className="app-status-form" noValidate onSubmit={(e:FormEvent)=>{e.preventDefault();void runLookup(lookup.reference);}}>
+          <div className="app-field"><label htmlFor="reference">Application reference</label><input id="reference" value={lookup.reference} onChange={e=>setLookup(s=>({...s,reference:e.target.value,result:null,error:''}))} autoCapitalize="characters" autoComplete="off" spellCheck={false} maxLength={80} disabled={lookup.busy}/></div>
+          <button className="button" disabled={lookup.busy||!config}>{lookup.busy?<><LoaderCircle className="form-spinner" size={17}/> Checking…</>:<><Search size={17}/> Check application status</>}</button>
+        </form>}
       {configError&&<p className="form-error" role="alert">{configError}</p>}
       {lookup.error&&<p className="form-error" role="alert">{lookup.error}</p>}
-      {result&&copy&&<section className="app-status-card" aria-live="polite"><h3>{copy.title}</h3><p>{copy.body}</p><p className="app-status-count">{result.documents_received} of {documentTypes.length} documents received</p></section>}
+      {result&&copy&&<section className="app-status-card" aria-live="polite"><h3>{copy.title}</h3><p>{copy.body}</p><p className="app-status-count">{result.documents_received} of {documentTypes.length} documents received</p>{justSubmitted&&<button type="button" className="app-link app-refresh" disabled={lookup.busy} onClick={()=>void runLookup(lookup.reference)}>{lookup.busy?<><LoaderCircle className="form-spinner" size={15}/> Checking…</>:<><RefreshCw size={15}/> Refresh status</>}</button>}</section>}
       {showNext&&<><h3 className="app-next-title">What happens next</h3><ol className="app-next">
         <li>Kaylo reviews your details and all five documents.</li>
         <li>If approved, your partner ID and a temporary password arrive at your delivery email, with your approval certificate.</li>
