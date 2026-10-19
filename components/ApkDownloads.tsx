@@ -26,6 +26,12 @@ export function ApkDownloads() {
       .finally(() => {if (mounted.current) setLoading(false);});
     return () => {mounted.current = false; controller.current?.abort(); urls.current.forEach(URL.revokeObjectURL); urls.current = [];};
   }, []);
+  async function refreshReleases() {
+    setLoading(true); setError('');
+    try { const latest = await apkRequest<Manifest>('manifest'); if (mounted.current) setManifest(latest); }
+    catch (e) {if (mounted.current) setError(e instanceof Error ? e.message : 'Please retry.');}
+    finally {if (mounted.current) setLoading(false);}
+  }
   async function unlock(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (unlocking) return;
@@ -33,6 +39,7 @@ export function ApkDownloads() {
     try {
       const result = await apkRequest<{token: string; expiresAt: string}>('unlock', {password});
       if (mounted.current) {setSession(result); setPassword(''); setVisible(false);}
+      if (!manifest.customer || !manifest.partner) await refreshReleases();
     } catch (e) {if (mounted.current) setError(e instanceof Error ? e.message : 'Please try again.');}
     finally {if (mounted.current) setUnlocking(false);}
   }
@@ -70,6 +77,7 @@ export function ApkDownloads() {
           <div className="apk-password-row"><div className="apk-password-input"><input id="download-password" type={visible ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" autoCapitalize="none" spellCheck={false} maxLength={256} required aria-describedby={error ? 'apk-error' : undefined}/><button type="button" aria-label={visible ? 'Hide password' : 'Show password'} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={19}/> : <Eye size={19}/>}</button></div><button className="button" disabled={unlocking || !password}>{unlocking ? <><LoaderCircle className="apk-spinner" size={17}/> Unlocking…</> : 'Unlock downloads'}</button></div>
         </form>}
       {error && <p role="alert" id="apk-error" className="apk-error">{error}</p>}
+      {!loading && (!manifest.customer || !manifest.partner) && <button type="button" className="apk-cancel" onClick={() => void refreshReleases()}>Refresh downloads</button>}
     </div>
     <div className="apk-apps">
       {(['customer', 'partner'] as const).map(app => {
@@ -81,7 +89,7 @@ export function ApkDownloads() {
           {ready[app] ? <a className="button apk-download-button" href={ready[app]} download={`kaylo-${app}.apk`}><Download size={18}/> Save APK again</a>
             : <button className="button apk-download-button" disabled={!session || !!busy || !available} onClick={() => void download(app)}>{active ? <><LoaderCircle size={18} className="apk-spinner"/> {progress >= 99 ? 'Verifying…' : `Downloading ${progress}%`}</> : <><Download size={18}/> Download {app === 'customer' ? 'Kaylo' : 'Partner'}</>}</button>}
           {active && <><progress value={progress} max={100} aria-label={`Downloading ${app === 'customer' ? 'Kaylo' : 'Partner'}`}/><button className="apk-cancel" onClick={() => controller.current?.abort()}>Cancel download</button></>}
-          <p className="apk-app-status" aria-live="polite">{ready[app] ? 'Your APK is ready. If the download did not start, tap Save APK again.' : !session ? 'Unlock above to download.' : active ? 'Keep this page open while the APK downloads.' : 'Ready to download.'}</p>
+          <p className="apk-app-status" aria-live="polite">{ready[app] ? 'Your APK is ready. If the download did not start, tap Save APK again.' : !session ? 'Unlock above to download.' : !available ? 'This download is being prepared.' : active ? 'Keep this page open while the APK downloads.' : 'Ready to download.'}</p>
         </article>;
       })}
     </div>
