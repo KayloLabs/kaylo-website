@@ -46,3 +46,18 @@ Set Supabase `KAYLO_PORTAL_URL=https://kaylolabs.github.io/kaylo-website/` after
 For the identical local build run `NEXT_PUBLIC_BASE_PATH=/kaylo-website node scripts/preview-admin.mjs` and open http://127.0.0.1:3100/kaylo-website/admin/. This static preview avoids development watcher limits.
 
 Checks: `npm run typecheck`, `node --experimental-strip-types --test lib/*.test.ts`, and `node --test server/worker.test.mjs`. The application contract's own database tests live in the app repository under `supabase/tests/worker_applications.sql` and `supabase/tests/partner_admin_review.sql`.
+
+## Android downloads
+
+`/download/` provides password-gated customer and partner APK downloads. The
+password is verified only by the Supabase `apk-download` Edge Function and is
+stored as a Supabase secret. Never add it to this repository, public environment
+variables, HTML or JavaScript. Access tokens stay in tab memory and expire after
+fifteen minutes. Signed links expire after ten minutes. Downloaded parts and the
+assembled APK are verified with SHA-256 before saving the file.
+
+The apps are published privately by the mobile repository's Release APKs
+workflow. The static website contains no APKs and no permanent download URLs.
+`NEXT_PUBLIC_APK_API_URL` can override the public endpoint, but is not a place
+for a password or privileged key. Preserve `/kaylo-website` as the Pages base
+path when building with `npm run build:pages`.
