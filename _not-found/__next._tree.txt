@@ -2,4 +2,4 @@
 :HL["/kaylo-website/_next/static/media/b60b21974a62beff-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
 :HL["/kaylo-website/_next/static/media/dd867eac9d8707d9-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
 :HL["/kaylo-website/_next/static/css/9f0cdeb987cecbc8.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"_not-found","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"3ROfgjRKLOzuLIpfd__CE"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"_not-found","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"4QtuhM-0P5TNOWkcQcurA"}
