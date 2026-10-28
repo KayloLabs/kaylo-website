@@ -3,8 +3,8 @@ export type PortalConfig = { firebaseApiKey: string; supabaseUrl: string; supaba
 export type Admin = { email: string; role: 'admin' | 'reviewer' };
 export type Status = 'submitted' | 'under_review' | 'changes_requested' | 'approved' | 'rejected';
 export const statuses: Record<Status, string> = { submitted: 'Documents pending', under_review: 'Ready for review', changes_requested: 'Changes requested', approved: 'Approved', rejected: 'Rejected' };
-export const documentNames: Record<string, string> = { photo: 'Profile photo', aadhaar_front: 'Aadhaar · front', aadhaar_back: 'Aadhaar · back', police_certificate: 'Police certificate', selfie: 'Identity selfie' };
-export type Application = { application_id: string; reference: string; status: Status; version: number; submitted_at: string; reviewed_at?: string; review_note?: string; worker_id?: string; details: { full_name: string; email: string; phone: string; profession: string; district: string; experience_years: number; travel_radius_km: number; services?: string[]; upi_id?: string; bank_account?: {account_holder?:string;bank_name?:string;account_number?:string;ifsc?:string} } };
+export {documentNames, requiredDocuments} from './partner-documents.ts';
+export type Application = { application_id: string; reference: string; status: Status; version: number; submitted_at: string; reviewed_at?: string; review_note?: string; worker_id?: string; details: { role?: 'worker'|'doctor'|'caregiver'; medical_council_number?: string; consultation_modes?: string[]; consultation_fee?: number; clinic_address?: string; caregiver_training?: string; hourly_rate?: number; care_services?: string[]; languages?: string[]; full_name: string; email: string; phone: string; profession: string; district: string; experience_years: number; travel_radius_km: number; services?: string[]; upi_id?: string; bank_account?: {account_holder?:string;bank_name?:string;account_number?:string;ifsc?:string} } };
 export type ApplicationSummary = Pick<Application,'application_id'|'reference'|'status'|'version'|'submitted_at'> & {full_name:string;profession:string;district:string};
 export type ApplicationDocument = { doc_type: string; content_type: string; submitted_at: string; byte_size: number; history?:{history_id:string;uploaded_at:string;storage_path:string}[];storage_path?:string };
 export type Delivery = { mail_id:string; kind?:string; event_type?:string; status:string;is_current:boolean; attempts:number; last_error?:string; sent_at?:string; created_at?:string };
@@ -19,7 +19,7 @@ const messages:Record<string,string> = {
   INVALID_TOKEN:'Your session has expired. Please sign in again.', UNAUTHORIZED:'Please sign in again.',
   VERSION_CONFLICT:'This application changed while you were reviewing it. Refresh it and check the latest documents.',
   APPLICATION_VERSION_CONFLICT:'This application changed while you were reviewing it. Refresh it and check the latest documents.',
-  ALL_DOCUMENTS_REQUIRED:'All five documents must be received and reviewed before approval.',
+  ALL_DOCUMENTS_REQUIRED:'All required documents must be received and reviewed before approval.',
   CORRECTION_NOT_ALLOWED:'This correction link has expired or the application has already been updated.',
   CORRECTION_LINK_EXPIRED:'This link has expired. Contact Kaylo to request a new document-update link.',
   CORRECTION_LINK_INVALID:'This link has been replaced by a newer request. Open the latest Kaylo email.',
