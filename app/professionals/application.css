@@ -16,10 +16,10 @@
 .app-field{display:block;min-width:0}
 .app-field.full{grid-column:1/-1}
 .app-field>label,.app-label{display:block;font-size:14px;font-weight:500}
-.app-field input:not([type=checkbox]),.app-field select{display:block;width:100%;margin-top:8px;border:1px solid #bdc8b9;background:#fafbf6;border-radius:6px;padding:12px 11px;font:inherit;min-height:48px;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.app-field input:not([type=checkbox]),.app-field select,.app-field textarea{display:block;width:100%;margin-top:8px;border:1px solid #bdc8b9;background:#fafbf6;border-radius:6px;padding:12px 11px;font:inherit;min-height:48px;color:var(--ink);transition:border-color .15s,box-shadow .15s}
 .app-field select{appearance:none;-webkit-appearance:none;padding-right:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23264d36' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
-.app-field input:focus,.app-field select:focus{border-color:var(--green);box-shadow:0 0 0 3px #264d3614}
-.app-field.has-error input,.app-field.has-error select{border-color:#8c3028}
+.app-field input:focus,.app-field select:focus,.app-field textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px #264d3614}
+.app-field.has-error input,.app-field.has-error select,.app-field.has-error textarea{border-color:#8c3028}
 .app-field input::placeholder{color:#8e968a;opacity:1}
 .app-upper{text-transform:uppercase}
 .app-hint{font-size:12px;line-height:1.6;color:#66705f;margin-top:8px}
@@ -113,10 +113,12 @@
  .app-actions .button.light{min-width:0;flex:1}
  .app-segmented{display:grid;width:100%}
  .app-step-title{font-size:26px}
- .app-field input:not([type=checkbox]),.app-field select{font-size:16px}
+ .app-field input:not([type=checkbox]),.app-field select,.app-field textarea{font-size:16px}
  .app-copy{margin-left:0}
  .app-status-form .button{justify-self:stretch}
 }
 @media(prefers-reduced-motion:reduce){
  .application *{transition:none!important;animation:none!important}
 }
+
+.app-field textarea{resize:vertical;min-height:110px}

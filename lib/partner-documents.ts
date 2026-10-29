@@ -6,6 +6,7 @@ export const documentNames: Record<string, string> = {
 };
 
 /** This list mirrors the server's required evidence, not a licence guarantee. */
+export type ApplicationDocumentType='photo'|'aadhaar_front'|'aadhaar_back'|'police_certificate'|'selfie'|'medical_council_reg'|'medical_degree'|'clinic_proof'|'caregiver_cert';
 export function requiredDocuments(role?: string): string[] {
   switch (role) {
     case 'doctor': return ['clinic_proof', 'medical_council_reg', 'medical_degree', 'photo', 'selfie'];

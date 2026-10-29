@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ApplicationError,applicationErrorMessage,buildDocumentForm,canonicalPhone,checkApplicationStatus,checkDocument,documentTypes,emptyDraft,keralaDistricts,
-  listServices,loadStoredDraft,newRequestToken,requestTokenPattern,saveStoredDraft,sniffDocumentMime,submitWorkerApplication,toDetails,uploadDocument,
+  listServices,loadStoredDraft,loadStoredSending,newRequestToken,requestTokenPattern,saveStoredDraft,saveStoredSending,sniffDocumentMime,submitWorkerApplication,toDetails,uploadDocument,
+  changeApplicationRole,requiredApplicationDocuments,caregiverServices,needsTravelRadius,
   validateApplication,validateIdentity,validatePayout,validateWork,type ApplicationDraft,
 } from './worker-application.ts';
 
@@ -77,7 +78,7 @@ test('consent must be true and the whole application validates at once',()=>{
 });
 
 test('p_details uses the server field names, trims, lowercases the email and uppercases the IFSC',()=>{
-  assert.deepEqual(toDetails(valid()),{full_name:'Test Applicant',phone:'+919876543210',email:'applicant@example.com',profession:'Electrician',services:[serviceA,serviceB],experience_years:7,district:'Ernakulam',travel_radius_km:15,consent:true,upi_id:'applicant@okbank'});
+  assert.deepEqual(toDetails(valid()),{role:'worker',full_name:'Test Applicant',phone:'+919876543210',email:'applicant@example.com',profession:'Electrician',services:[serviceA,serviceB],experience_years:7,district:'Ernakulam',travel_radius_km:15,consent:true,upi_id:'applicant@okbank'});
   const details=toDetails(bank());
   assert.equal(details.upi_id,undefined);
   assert.deepEqual(details.bank_account,{account_holder:'Test Applicant',bank_name:'State Bank',account_number:'123456789012',ifsc:'SBIN0001234'});
@@ -211,29 +212,131 @@ test('status lookups upper-case the reference, map a null reply to not found and
   await assert.rejects(checkApplicationStatus(config,'short'),(e:unknown)=>e instanceof ApplicationError&&e.code==='INVALID_REFERENCE');
 });
 
-test('a stored draft keeps typed text and its token, never files, and tolerates damage',()=>{
+test('draft storage remembers only service IDs and payout method, never personal values or consent',()=>{
   const store=new Map<string,string>();
   (globalThis as {window?:unknown}).window={sessionStorage:{getItem:(k:string)=>store.get(k)??null,setItem:(k:string,v:string)=>{store.set(k,v);},removeItem:(k:string)=>{store.delete(k);}}};
   try{
     const token=newRequestToken();
-    saveStoredDraft({draft:{...bank(),services:[serviceA]},step:3,requestToken:token});
+    const draft={...bank(),services:[serviceA]};
+    saveStoredDraft({draft,step:3,requestToken:token});
+    assert.deepEqual(JSON.parse(store.get('kaylo.application.draft.v2')!),{draft:{role:'worker',services:[serviceA],payout:'bank'}});
     const restored=loadStoredDraft();
     assert.ok(restored);
-    assert.equal(restored.step,3);
-    assert.equal(restored.requestToken,token);
-    assert.equal(restored.draft.accountNumber,'123456789012');
+    assert.equal(restored.step,0);
+    assert.notEqual(restored.requestToken,token);
+    assert.match(restored.requestToken,requestTokenPattern);
+    for(const field of ['fullName','phone','email','profession','accountNumber','confirmAccountNumber','accountHolder','bankName','ifsc','upiId'] as const){
+      assert.equal(restored.draft[field],'',field);
+    }
+    assert.equal(restored.draft.consent,false);
     assert.deepEqual(restored.draft.services,[serviceA]);
-    assert.equal(JSON.stringify(store.get('kaylo.application.draft.v1')).includes('file'),false);
-    store.set('kaylo.application.draft.v1',JSON.stringify({draft:{fullName:5,services:'x',payout:'cash',consent:'yes'},step:9,requestToken:'bad'}));
-    const damaged=loadStoredDraft();
-    assert.ok(damaged);
-    assert.equal(damaged.draft.fullName,'');
-    assert.deepEqual(damaged.draft.services,[]);
-    assert.equal(damaged.draft.payout,'upi');
-    assert.equal(damaged.draft.consent,false);
-    assert.equal(damaged.step,0);
-    assert.match(damaged.requestToken,requestTokenPattern);
-    store.set('kaylo.application.draft.v1','{not json');
+    store.set('kaylo.application.draft.v1',JSON.stringify({draft,step:3,requestToken:token}));
+    loadStoredDraft();
+    assert.equal(store.has('kaylo.application.draft.v1'),false);
+    store.set('kaylo.application.draft.v2',JSON.stringify({draft:{...draft,services:['private@example.test',serviceA]},step:3,requestToken:token}));
+    const injected=loadStoredDraft();
+    assert.ok(injected);
+    assert.equal(injected.draft.accountNumber,'');
+    assert.equal(injected.draft.fullName,'');
+    assert.deepEqual(injected.draft.services,[serviceA]);
+    store.set('kaylo.application.draft.v2','{not json');
     assert.equal(loadStoredDraft(),null);
+  }finally{delete (globalThis as {window?:unknown}).window;}
+});
+
+const doctor=():ApplicationDraft=>({...valid(),role:'doctor',profession:'General medicine',services:[],medicalCouncilNumber:' REG-123 ',clinicAddress:' Test Clinic, Kochi ',consultationModes:['clinic','teleconsult'],consultationFee:'500.25',travelRadiusKm:''});
+const caregiver=():ApplicationDraft=>({...valid(),role:'caregiver',profession:'',services:[caregiverServices[0]],caregiverTraining:' First aid training ',hourlyRate:'250.50',languages:['Malayalam','English']});
+
+test('doctor serialization uses 0043 Care fields and leaves catalog assignment to the server',()=>{
+  const draft=doctor();
+  assert.deepEqual(validateApplication(draft,[]),{});
+  assert.equal(needsTravelRadius(draft),false);
+  const payload=toDetails(draft);
+  assert.deepEqual(payload,{role:'doctor',full_name:'Test Applicant',phone:'+919876543210',email:'applicant@example.com',profession:'General medicine',services:[],experience_years:7,district:'Ernakulam',travel_radius_km:1,consent:true,medical_council_number:'REG-123',clinic_address:'Test Clinic, Kochi',consultation_modes:['clinic','teleconsult'],consultation_fee:500.25,upi_id:'applicant@okbank'});
+  assert.equal(payload.hourly_rate,undefined);
+  assert.equal(payload.caregiver_training,undefined);
+});
+
+test('doctor validation bounds registration, practice address, fee, consultation modes and home visit radius',()=>{
+  for(const consultationFee of ['','0','50000.01','1.234','1e3','-1','Infinity'])assert.ok(validateWork({...doctor(),consultationFee},[]).consultationFee,consultationFee);
+  for(const consultationFee of ['1','50000','12.50'])assert.equal(validateWork({...doctor(),consultationFee},[]).consultationFee,undefined,consultationFee);
+  assert.ok(validateWork({...doctor(),medicalCouncilNumber:'x'},[]).medicalCouncilNumber);
+  assert.ok(validateWork({...doctor(),clinicAddress:'xy'},[]).clinicAddress);
+  assert.ok(validateWork({...doctor(),clinicAddress:'x'.repeat(501)},[]).clinicAddress);
+  assert.ok(validateWork({...doctor(),consultationModes:[]},[]).consultationModes);
+  assert.ok(validateWork({...doctor(),consultationModes:['unknown'] as never},[]).consultationModes);
+  assert.ok(validateWork({...doctor(),consultationModes:['homeVisit'],travelRadiusKm:'0'},[]).travelRadiusKm);
+  assert.equal(validateWork({...doctor(),consultationModes:['homeVisit'],travelRadiusKm:'15'},[]).travelRadiusKm,undefined);
+  assert.equal(toDetails({...doctor(),consultationModes:['homeVisit'],travelRadiusKm:'15'}).travel_radius_km,15);
+});
+
+test('caregiver serialization sends offered scope strings for server mapping and only supplied training',()=>{
+  assert.deepEqual(validateApplication(caregiver(),[]),{});
+  const payload=toDetails(caregiver());
+  assert.deepEqual(payload,{role:'caregiver',full_name:'Test Applicant',phone:'+919876543210',email:'applicant@example.com',profession:'Caregiver',services:['Elderly Companion'],experience_years:7,district:'Ernakulam',travel_radius_km:15,consent:true,caregiver_training:'First aid training',hourly_rate:250.5,languages:['Malayalam','English'],upi_id:'applicant@okbank'});
+  assert.equal(payload.medical_council_number,undefined);
+  assert.equal(payload.clinic_address,undefined);
+  assert.equal('is_verified' in payload,false);
+  for(const hourlyRate of ['0','10000','12.345','1e3','Infinity'])assert.ok(validateWork({...caregiver(),hourlyRate},[]).hourlyRate,hourlyRate);
+  for(const hourlyRate of ['1','9999.99'])assert.equal(validateWork({...caregiver(),hourlyRate},[]).hourlyRate,undefined,hourlyRate);
+  assert.ok(validateWork({...caregiver(),services:[serviceA]},active).services);
+  assert.ok(validateWork({...caregiver(),services:[]},active).services);
+  assert.ok(validateWork({...caregiver(),caregiverTraining:''},[]).caregiverTraining);
+  assert.ok(validateWork({...caregiver(),languages:['Injected language']},[]).languages);
+});
+
+test('changing role clears previous role claims and requires fresh consent; payloads omit all irrelevant fields',()=>{
+  for(const source of [doctor(),caregiver()])for(const target of ['worker','doctor','caregiver'] as const){
+    if(source.role===target)continue;
+    const changed=changeApplicationRole(source,target);
+    assert.equal(changed.role,target);
+    for(const field of ['profession','medicalCouncilNumber','clinicAddress','consultationFee','caregiverTraining','hourlyRate'] as const)assert.equal(changed[field],'',field);
+    for(const field of ['services','consultationModes','languages'] as const)assert.deepEqual(changed[field],[],field);
+    assert.equal(changed.consent,false);
+    assert.equal(changed.fullName,source.fullName);
+  }
+  const worker=toDetails({...valid(),medicalCouncilNumber:'stale secret',clinicAddress:'stale address',caregiverTraining:'stale training',consultationFee:'123',hourlyRate:'45'});
+  assert.equal(JSON.stringify(worker).includes('stale'),false);
+  const doc=toDetails({...doctor(),caregiverTraining:'stale training',hourlyRate:'45',languages:['Hindi']});
+  assert.equal(doc.caregiver_training,undefined);
+  assert.equal(doc.hourly_rate,undefined);
+  assert.equal(doc.languages,undefined);
+});
+
+test('role documents match the actual server evidence and Care document uploads accept PDF evidence',async()=>{
+  assert.deepEqual(requiredApplicationDocuments('doctor'),['clinic_proof','medical_council_reg','medical_degree','photo','selfie']);
+  assert.deepEqual(requiredApplicationDocuments('caregiver'),['aadhaar_back','aadhaar_front','caregiver_cert','photo','selfie']);
+  const pdf=new Blob(['%PDF-1.4 test'],{type:'application/pdf'});
+  for(const doc of ['clinic_proof','medical_council_reg','medical_degree','caregiver_cert'] as const){
+    assert.deepEqual(await checkDocument(doc,pdf),{ok:true,mime:'application/pdf'});
+    assert.equal(buildDocumentForm({application_id:'test',upload_token:'a'.repeat(64)},doc,pdf,'application/pdf').get('doc_type'),doc);
+  }
+  assert.ok(!requiredApplicationDocuments('doctor').includes('aadhaar_front'));
+  assert.ok(!requiredApplicationDocuments('caregiver').includes('police_certificate'));
+});
+
+test('Care drafts never persist council numbers, addresses, training, languages or fees; retries retain role-specific document progress',()=>{
+  const store=new Map<string,string>();
+  (globalThis as {window?:unknown}).window={sessionStorage:{getItem:(key:string)=>store.get(key)??null,setItem:(key:string,value:string)=>store.set(key,value),removeItem:(key:string)=>store.delete(key)}};
+  try{
+    for(const draft of [doctor(),caregiver()]){
+      saveStoredDraft({draft,step:3,requestToken:'a'.repeat(64)});
+      assert.deepEqual(JSON.parse(store.get('kaylo.application.draft.v2')!),{draft:{role:draft.role,services:[],payout:'upi'}});
+      const restored=loadStoredDraft()!;
+      assert.equal(restored.draft.role,draft.role);
+      assert.equal(restored.draft.medicalCouncilNumber,'');
+      assert.equal(restored.draft.clinicAddress,'');
+      assert.equal(restored.draft.caregiverTraining,'');
+      assert.equal(restored.draft.consent,false);
+    }
+    const receipt={application_id:'a',reference:'KA-TEST12345',upload_token:'a'.repeat(64),upload_expires_at:'2099-01-01T00:00:00Z',status:'submitted' as const};
+    saveStoredSending({role:'doctor',receipt,uploaded:['medical_degree','photo','photo','aadhaar_front']});
+    assert.deepEqual(loadStoredSending(),{role:'doctor',receipt,uploaded:['medical_degree','photo']});
+    saveStoredSending({role:'caregiver',receipt,uploaded:['caregiver_cert','medical_degree']});
+    assert.deepEqual(loadStoredSending(),{role:'caregiver',receipt,uploaded:['caregiver_cert']});
+    store.set('kaylo.application.sending.v1',JSON.stringify({receipt,uploaded:['police_certificate']}));
+    assert.equal(loadStoredSending()?.role,'worker');
+    store.set('kaylo.application.sending.v1',JSON.stringify({role:'administrator',receipt,uploaded:[]}));
+    assert.equal(loadStoredSending(),null);
   }finally{delete (globalThis as {window?:unknown}).window;}
 });

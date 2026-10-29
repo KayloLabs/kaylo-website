@@ -6,15 +6,15 @@ import {loadPortalConfig,type PortalConfig} from '@/lib/admin-api';
 import {sitePath} from '@/lib/site-path';
 import {
   ApplicationError,applicationErrorMessage,canonicalPhone,checkApplicationStatus,checkDocument,clearStoredDraft,clearStoredSending,documentHints,documentLabels,
-  documentTypes,emptyDraft,imageOnlyDocuments,keralaDistricts,listServices,loadStoredDraft,loadStoredReference,loadStoredSending,newRequestToken,receiptUsable,
+  applicationRoles,roleLabels,caregiverServices,caregiverLanguages,consultationModes,consultationLabels,changeApplicationRole,needsTravelRadius,requiredApplicationDocuments,emptyDraft,imageOnlyDocuments,keralaDistricts,listServices,loadStoredDraft,loadStoredReference,loadStoredSending,newRequestToken,receiptUsable,
   saveStoredDraft,saveStoredReference,saveStoredSending,statusCopy,stepCount,submitWorkerApplication,toDetails,uploadDocument,validateConsent,validateIdentity,
-  validatePayout,validateWork,type ApplicationDraft,type ApplicationStatus,type DocumentMime,type DocumentType,type DraftErrors,type DraftField,type Receipt,type ServiceOption,
+  validateApplication,validatePayout,validateWork,type ApplicationRole,type ApplicationDraft,type ApplicationStatus,type DocumentMime,type DocumentType,type DraftErrors,type DraftField,type Receipt,type ServiceOption,
 } from '@/lib/worker-application';
 
 const steps=['About you','Your work & service area','Your documents','Payout & consent'];
 const supportEmail='kayloapp@gmail.com';
 type Picked={file:File;mime:DocumentMime;preview:string|null};
-type Sending={receipt:Receipt;uploaded:DocumentType[];current:DocumentType|null;verifying:boolean;error:string;closed:boolean};
+type Sending={role:ApplicationRole;receipt:Receipt;uploaded:DocumentType[];current:DocumentType|null;verifying:boolean;error:string;closed:boolean};
 type Lookup={reference:string;result:ApplicationStatus|null;error:string;busy:boolean;auto:boolean};
 type View='form'|'sending'|'status';
 const errorText=(e:unknown)=>e instanceof Error?e.message:'Something went wrong. Please retry.';
@@ -67,6 +67,7 @@ export function WorkerApplication(){
   const pickedRef=useRef(picked);
   pickedRef.current=picked;
   const inputs=useRef<Partial<Record<DocumentType,HTMLInputElement|null>>>({});
+  const documentGeneration=useRef(0);
 
   useEffect(()=>{
     loadPortalConfig().then(setConfig).catch(e=>setConfigError(errorText(e)));
@@ -76,7 +77,7 @@ export function WorkerApplication(){
     if(storedDraft){setDraft(storedDraft.draft);setStep(storedDraft.step);token.current=storedDraft.requestToken;}
     else token.current=newRequestToken();
     if(storedSending){
-      setSending({receipt:storedSending.receipt,uploaded:storedSending.uploaded,current:null,verifying:false,error:'',closed:!receiptUsable(storedSending.receipt)});
+      setSending({role:storedSending.role,receipt:storedSending.receipt,uploaded:storedSending.uploaded,current:null,verifying:false,error:'',closed:!receiptUsable(storedSending.receipt)});
       setView('sending');
     }else if(reference&&!storedDraft){
       setLookup({reference,result:null,error:'',busy:false,auto:true});
@@ -108,6 +109,14 @@ export function WorkerApplication(){
     setErrors(e=>e[key]?{...e,[key]:undefined}:e);
     setFormError('');
   }
+  function chooseRole(role:ApplicationRole){
+    if(role===draft.role)return;
+    documentGeneration.current++;
+    setDraft(d=>changeApplicationRole(d,role));
+    setPicked(p=>{for(const doc of Object.values(p))if(doc?.preview)URL.revokeObjectURL(doc.preview);return {};});
+    setDocErrors({});setErrors({});setFormError('');token.current=newRequestToken();
+  }
+  const documentTypes=requiredApplicationDocuments(sending?.role??draft.role);
   function toggleService(id:string){update('services',draft.services.includes(id)?draft.services.filter(s=>s!==id):[...draft.services,id]);}
   function stepErrors(current:number):DraftErrors{
     if(current===0)return validateIdentity(draft);
@@ -124,7 +133,7 @@ export function WorkerApplication(){
     const missing=step===2?documentTypes.filter(t=>!picked[t]):[];
     if(Object.keys(found).length||missing.length){
       setErrors(found);
-      if(missing.length)setFormError('Add all five documents to continue.');
+      if(missing.length)setFormError('Add all required documents to continue.');
       const first=Object.keys(found)[0];
       if(first)document.getElementById(first)?.focus();
       else if(missing[0])inputs.current[missing[0]]?.parentElement?.querySelector<HTMLButtonElement>('button')?.focus();
@@ -137,7 +146,9 @@ export function WorkerApplication(){
     const file=event.target.files?.[0];
     event.target.value='';
     if(!file)return;
+    const generation=documentGeneration.current;
     const check=await checkDocument(type,file);
+    if(generation!==documentGeneration.current)return;
     if(!check.ok){setDocErrors(d=>({...d,[type]:check.message}));return;}
     setDocErrors(d=>({...d,[type]:undefined}));setFormError('');
     setPicked(p=>{
@@ -150,11 +161,14 @@ export function WorkerApplication(){
   }
   async function send(){
     if(!config||busy)return;
+    const invalid=validateApplication(draft,(services??[]).map(s=>s.service_id));
+    if(Object.keys(invalid).length){setErrors(invalid);setFormError('Check your details before submitting.');return;}
+    if(documentTypes.some(type=>!picked[type])){go(2);setFormError('Add every required document before submitting.');return;}
     setBusy(true);setFormError('');
     try{
       const receipt=await submitWorkerApplication(config,toDetails(draft),token.current);
-      const state:Sending={receipt,uploaded:[],current:null,verifying:false,error:'',closed:false};
-      saveStoredSending({receipt,uploaded:[]});saveStoredReference(receipt.reference);clearStoredDraft();
+      const state:Sending={role:draft.role,receipt,uploaded:[],current:null,verifying:false,error:'',closed:false};
+      saveStoredSending({role:draft.role,receipt,uploaded:[]});saveStoredReference(receipt.reference);clearStoredDraft();
       setSending(state);setView('sending');
       requestAnimationFrame(()=>shell.current?.scrollIntoView({block:'start',behavior:reduced?'auto':'smooth'}));
       await uploadAll(state);
@@ -169,7 +183,8 @@ export function WorkerApplication(){
     let state:Sending={...start,error:'',closed:false,verifying:false};
     setSending(state);setBusy(true);
     try{
-      for(const type of documentTypes){
+      const required=requiredApplicationDocuments(state.role);
+      for(const type of required){
         if(state.uploaded.includes(type))continue;
         const doc=pickedRef.current[type];
         if(!doc){state={...state,current:null,error:`Choose your ${documentLabels[type].toLowerCase()} again, then retry.`};setSending(state);return;}
@@ -177,11 +192,11 @@ export function WorkerApplication(){
         try{await uploadDocument(config,state.receipt,type,doc.file,doc.mime);}
         catch(e){state={...state,current:null,error:errorText(e),closed:e instanceof ApplicationError&&e.isUploadClosed};setSending(state);return;}
         state={...state,uploaded:[...state.uploaded,type],current:null};setSending(state);
-        saveStoredSending({receipt:state.receipt,uploaded:state.uploaded});
+        saveStoredSending({role:state.role,receipt:state.receipt,uploaded:state.uploaded});
       }
       state={...state,verifying:true};setSending(state);
       const result=await checkApplicationStatus(config,state.receipt.reference);
-      if(result.documents_received<documentTypes.length||result.status==='submitted'){state={...state,verifying:false,error:applicationErrorMessage('UPLOAD_INCOMPLETE')};setSending(state);return;}
+      if(result.documents_received<required.length||result.status==='submitted'){state={...state,verifying:false,error:applicationErrorMessage('UPLOAD_INCOMPLETE')};setSending(state);return;}
       clearStoredSending();
       setPicked(p=>{for(const doc of Object.values(p))if(doc?.preview)URL.revokeObjectURL(doc.preview);return {};});
       setDraft(emptyDraft);setStep(0);token.current=newRequestToken();
@@ -210,10 +225,10 @@ export function WorkerApplication(){
     exit:(dir:number)=>({opacity:0,x:reduced?0:dir*-28}),
   };
   const transition={duration:reduced?0:.32,ease:[.22,1,.36,1] as [number,number,number,number]};
-  const chosenServices=(services??[]).filter(s=>draft.services.includes(s.service_id)).map(s=>s.service_name);
+  const chosenServices=draft.role==='doctor'?draft.consultationModes.map(m=>consultationLabels[m]):draft.role==='caregiver'?draft.services:(services??[]).filter(s=>draft.services.includes(s.service_id)).map(s=>s.service_name);
   const pickedCount=documentTypes.filter(t=>picked[t]).length;
   const input=(key:DraftField,hint=false)=>({
-    id:key,value:String(draft[key]),onChange:(e:ChangeEvent<HTMLInputElement|HTMLSelectElement>)=>update(key,e.target.value as ApplicationDraft[typeof key]),
+    id:key,value:String(draft[key]),onChange:(e:ChangeEvent<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>)=>update(key,e.target.value as ApplicationDraft[typeof key]),
     'aria-invalid':errors[key]?true:undefined,'aria-describedby':describedBy(key,hint?'hint':undefined,errors[key]),disabled:busy,
   });
 
@@ -221,7 +236,7 @@ export function WorkerApplication(){
     const s=sending;
     return <div ref={shell} className="professional-form application app-sending" aria-busy={busy}>
       <div className="form-title"><p className="eyebrow">{s.closed?'UPLOAD PAUSED':'ALMOST THERE'}</p><h2>Finish sending<br/><em>your application.</em></h2>
-        <p>Your application is only ready for review when all five documents are received. Retry continues the same application. If you close this page before finishing, contact Kaylo with your reference.</p></div>
+        <p>Your application is only ready for review when all required documents are received. Retry continues the same application. If you close this page before finishing, contact Kaylo with your reference.</p></div>
       <div className="app-reference"><span>Application reference</span><strong>{s.receipt.reference}</strong><CopyReference reference={s.receipt.reference}/></div>
       <p className="app-progress-label" aria-live="polite">{s.verifying?'Confirming with Kaylo…':`${s.uploaded.length} of ${documentTypes.length} documents received`}</p>
       <div className="app-bar" role="progressbar" aria-label="Documents received" aria-valuemin={0} aria-valuemax={documentTypes.length} aria-valuenow={s.uploaded.length}><motion.div initial={false} animate={{width:`${s.uploaded.length/documentTypes.length*100}%`}} transition={{duration:reduced?0:.4}}/></div>
@@ -250,7 +265,7 @@ export function WorkerApplication(){
     const showNext=justSubmitted||result?.status==='under_review';
     return <div ref={shell} className="application-success application app-status" role="status" aria-busy={lookup.busy}>
       {justSubmitted?<><CheckCircle2 size={44} strokeWidth={1.3}/><p className="eyebrow">APPLICATION RECEIVED</p><h2>Your skill.<br/>A new beginning.</h2>
-        <p>Thank you. Your details and all five documents have reached Kaylo. Keep your reference; it is how you check progress and how support finds your application.</p></>
+        <p>Thank you. Your details and all required documents have reached Kaylo. Keep your reference; it is how you check progress and how support finds your application.</p></>
       :<><p className="eyebrow">YOUR APPLICATION</p><h2>Check your<br/><em>application status.</em></h2><p>Enter your application reference to see its status. Personal details and documents are never displayed here.</p></>}
       {justSubmitted
         ?<div className="app-reference"><span>Application reference</span><strong>{lookup.reference}</strong><CopyReference reference={lookup.reference}/></div>
@@ -260,9 +275,9 @@ export function WorkerApplication(){
         </form>}
       {configError&&<p className="form-error" role="alert">{configError}</p>}
       {lookup.error&&<p className="form-error" role="alert">{lookup.error}</p>}
-      {result&&copy&&<section className="app-status-card" aria-live="polite"><h3>{copy.title}</h3><p>{copy.body}</p><p className="app-status-count">{result.documents_received} of {documentTypes.length} documents received</p>{justSubmitted&&<button type="button" className="app-link app-refresh" disabled={lookup.busy} onClick={()=>void runLookup(lookup.reference)}>{lookup.busy?<><LoaderCircle className="form-spinner" size={15}/> Checking…</>:<><RefreshCw size={15}/> Refresh status</>}</button>}</section>}
+      {result&&copy&&<section className="app-status-card" aria-live="polite"><h3>{copy.title}</h3><p>{copy.body}</p><p className="app-status-count">{result.documents_received} documents received</p>{justSubmitted&&<button type="button" className="app-link app-refresh" disabled={lookup.busy} onClick={()=>void runLookup(lookup.reference)}>{lookup.busy?<><LoaderCircle className="form-spinner" size={15}/> Checking…</>:<><RefreshCw size={15}/> Refresh status</>}</button>}</section>}
       {showNext&&<><h3 className="app-next-title">What happens next</h3><ol className="app-next">
-        <li>Kaylo reviews your details and all five documents.</li>
+        <li>Kaylo reviews your details and all required documents.</li>
         <li>If approved, your partner ID and a temporary password arrive at your delivery email, with your approval certificate.</li>
         <li>Sign in on the Kaylo Partner app with that partner ID and set a new password. Work opens after that.</li>
       </ol></>}
@@ -278,6 +293,7 @@ export function WorkerApplication(){
     <div className="app-progress" aria-hidden="true">{steps.map((label,i)=><span key={label} className={i<=step?'done':''}/>)}</div>
     <p className="app-step-count">Step {step+1} of {stepCount}</p>
     <h3 className="app-step-title" ref={title} tabIndex={-1}>{steps[step]}</h3>
+    {step===0&&<p className="form-privacy">Your personal and payout details stay in this form while it is open. Reloading clears them; only your partner type, service choices and payout method are remembered.</p>}
     {configError&&<p className="form-error" role="alert">{configError}</p>}
     {formError&&<p className="form-error" role="alert">{formError}</p>}
     <form noValidate onSubmit={e=>{e.preventDefault();next();}}>
@@ -285,26 +301,51 @@ export function WorkerApplication(){
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div key={step} custom={direction} variants={variants} initial="enter" animate="center" exit="exit" transition={transition}>
             {step===0&&<div className="app-fields">
+              <Field id="role" label="Partner type" full hint="Choose the work you are applying to provide. Changing type clears role details and selected documents." error={errors.role}><select id="role" value={draft.role} onChange={e=>chooseRole(e.target.value as ApplicationRole)} disabled={busy} aria-describedby="role-hint">{applicationRoles.map(role=><option key={role} value={role}>{roleLabels[role]}</option>)}</select></Field>
               <Field id="fullName" label="Full name" error={errors.fullName}><input {...input('fullName')} autoComplete="name" maxLength={120}/></Field>
               <Field id="phone" label="Phone number" hint="Include the country code, like +91." error={errors.phone}><input {...input('phone',true)} type="tel" inputMode="tel" autoComplete="tel" maxLength={24} placeholder="+91"/></Field>
               <Field id="email" label="Delivery email" full hint="Use an email you can access. Kaylo sends your partner ID and temporary password here after approval." error={errors.email}><input {...input('email',true)} type="email" inputMode="email" autoComplete="email" maxLength={254}/></Field>
             </div>}
             {step===1&&<div className="app-fields">
-              <Field id="profession" label="Profession" full error={errors.profession}><input {...input('profession')} autoComplete="organization-title" maxLength={120}/></Field>
-              <div className={`app-field full${errors.services?' has-error':''}`} role="group" aria-labelledby="services-label" aria-describedby={errors.services?'services-error':undefined}>
+              <>{draft.role!=='caregiver'&&<Field id="profession" label={draft.role==='doctor'?'Medical specialty':'Profession'} full error={errors.profession}><input {...input('profession')} autoComplete="organization-title" maxLength={120}/></Field>}</>
+              {draft.role==='worker'&&<div className={`app-field full${errors.services?' has-error':''}`} role="group" aria-labelledby="services-label" aria-describedby={errors.services?'services-error':undefined}>
                 <span className="app-label" id="services-label">Services you offer</span>
                 {services===null&&!servicesError&&<p className="app-hint"><LoaderCircle className="form-spinner" size={15}/> Loading services…</p>}
                 {servicesError&&<p className="app-field-error" role="alert">{servicesError} <button type="button" className="app-link" onClick={()=>void loadServices()}>Retry</button></p>}
                 {services&&services.length===0&&<p className="app-hint">The service catalogue is not available yet. Please try again later.</p>}
                 {services&&services.length>0&&<div className="app-chips">{services.map(s=>{const on=draft.services.includes(s.service_id);return <button type="button" key={s.service_id} className="app-chip" aria-pressed={on} disabled={busy} onClick={()=>toggleService(s.service_id)}>{on&&<Check size={15}/>}{s.service_name}</button>;})}</div>}
                 {errors.services&&<p className="app-field-error" id="services-error" role="alert">{errors.services}</p>}
-              </div>
+              </div>}
+              {draft.role==='doctor'&&<>
+                <Field id="medicalCouncilNumber" label="Medical council registration number" full error={errors.medicalCouncilNumber}><input {...input('medicalCouncilNumber')} autoComplete="off" maxLength={120}/></Field>
+                <Field id="clinicAddress" label="Clinic / practice address" full hint="Supply the address supported by your clinic or practice document, including for remote consultations." error={errors.clinicAddress}><textarea {...input('clinicAddress',true)} rows={3} maxLength={500}/></Field>
+                <div className="app-field full" role="group" aria-labelledby="consultation-modes-label" aria-describedby={errors.consultationModes?'consultationModes-error':undefined}>
+                  <span className="app-label" id="consultation-modes-label">Consultation modes</span>
+                  <div className="app-chips">{consultationModes.map(mode=><button type="button" key={mode} className="app-chip" aria-pressed={draft.consultationModes.includes(mode)} disabled={busy} onClick={()=>update('consultationModes',draft.consultationModes.includes(mode)?draft.consultationModes.filter(m=>m!==mode):[...draft.consultationModes,mode])}>{consultationLabels[mode]}</button>)}</div>
+                  {errors.consultationModes&&<p className="app-field-error" id="consultationModes-error" role="alert">{errors.consultationModes}</p>}
+                </div>
+                <Field id="consultationFee" label="Consultation fee (₹)" hint="₹1 to ₹50,000; up to two decimals." error={errors.consultationFee}><input {...input('consultationFee',true)} inputMode="decimal" maxLength={8}/></Field>
+              </>}
+              {draft.role==='caregiver'&&<>
+                <div className="app-field full" role="group" aria-labelledby="care-services-label" aria-describedby={errors.services?'services-error':undefined}>
+                  <span className="app-label" id="care-services-label">Care services you offer</span>
+                  <div className="app-chips">{caregiverServices.map(service=><button type="button" key={service} className="app-chip" aria-pressed={draft.services.includes(service)} disabled={busy} onClick={()=>toggleService(service)}>{service}</button>)}</div>
+                  {errors.services&&<p className="app-field-error" id="services-error" role="alert">{errors.services}</p>}
+                </div>
+                <Field id="caregiverTraining" label="Training and experience" full hint="Describe your actual training. Your certificate is requested in the next step." error={errors.caregiverTraining}><input {...input('caregiverTraining',true)} maxLength={120} autoComplete="off"/></Field>
+                <Field id="hourlyRate" label="Hourly rate (₹)" hint="₹1 to ₹9,999.99; up to two decimals." error={errors.hourlyRate}><input {...input('hourlyRate',true)} inputMode="decimal" maxLength={7}/></Field>
+                <div className="app-field full" role="group" aria-labelledby="languages-label" aria-describedby={errors.languages?'languages-error':undefined}>
+                  <span className="app-label" id="languages-label">Languages spoken (optional)</span>
+                  <div className="app-chips">{caregiverLanguages.map(language=><button type="button" key={language} className="app-chip" aria-pressed={draft.languages.includes(language)} disabled={busy} onClick={()=>update('languages',draft.languages.includes(language)?draft.languages.filter(l=>l!==language):[...draft.languages,language])}>{language}</button>)}</div>
+                  {errors.languages&&<p className="app-field-error" id="languages-error" role="alert">{errors.languages}</p>}
+                </div>
+              </>}
               <Field id="experienceYears" label="Experience (years)" error={errors.experienceYears}><input {...input('experienceYears')} inputMode="numeric" maxLength={2}/></Field>
               <Field id="district" label="District" error={errors.district}><select {...input('district')}><option value="" disabled>Choose your district</option>{keralaDistricts.map(d=><option key={d} value={d}>{d}</option>)}</select></Field>
-              <Field id="travelRadiusKm" label="Travel radius (km)" error={errors.travelRadiusKm}><input {...input('travelRadiusKm')} inputMode="numeric" maxLength={3}/></Field>
+              <>{needsTravelRadius(draft)&&<Field id="travelRadiusKm" label="Travel radius (km)" error={errors.travelRadiusKm}><input {...input('travelRadiusKm')} inputMode="numeric" maxLength={3}/></Field>}</>
             </div>}
             {step===2&&<>
-              <p className="app-intro">Add all five documents. Use JPG or PNG for photos; JPG, PNG or PDF for other documents. Maximum 10 MB per file.</p>
+              <p className="app-intro">Add all required documents. Use JPG or PNG for photos; JPG, PNG or PDF for other documents. Maximum 10 MB per file.</p>
               <ul className="app-docs">{documentTypes.map(type=>{
                 const doc=picked[type],error=docErrors[type],imageOnly=imageOnlyDocuments.has(type);
                 return <li key={type} className={`app-doc${doc?' ready':''}`}>
@@ -344,10 +385,13 @@ export function WorkerApplication(){
                   <div><dt>Name</dt><dd>{draft.fullName.trim()||'Not entered'}</dd></div>
                   <div><dt>Phone</dt><dd>{draft.phone.trim()?canonicalPhone(draft.phone):'Not entered'}</dd></div>
                   <div><dt>Delivery email</dt><dd>{draft.email.trim().toLowerCase()||'Not entered'}</dd></div>
-                  <div><dt>Profession</dt><dd>{draft.profession.trim()||'Not entered'}</dd></div>
+                  <div><dt>Partner type</dt><dd>{roleLabels[draft.role]}</dd></div>
+                  <div><dt>{draft.role==='doctor'?'Medical specialty':'Profession'}</dt><dd>{draft.role==='caregiver'?'Caregiver':draft.profession.trim()||'Not entered'}</dd></div>
                   <div><dt>Services</dt><dd>{chosenServices.length?chosenServices.join(', '):'None chosen'}</dd></div>
+                  {draft.role==='doctor'&&<><div><dt>Medical council number</dt><dd>{draft.medicalCouncilNumber.trim()}</dd></div><div><dt>Clinic / practice address</dt><dd>{draft.clinicAddress.trim()}</dd></div><div><dt>Consultation fee</dt><dd>₹{draft.consultationFee.trim()}</dd></div></>}
+                  {draft.role==='caregiver'&&<><div><dt>Training and experience</dt><dd>{draft.caregiverTraining.trim()}</dd></div><div><dt>Hourly rate</dt><dd>₹{draft.hourlyRate.trim()}</dd></div><div><dt>Languages</dt><dd>{draft.languages.join(', ')||'Not supplied'}</dd></div></>}
                   <div><dt>Experience</dt><dd>{draft.experienceYears.trim()?`${draft.experienceYears.trim()} years`:'Not entered'}</dd></div>
-                  <div><dt>Service area</dt><dd>{draft.district?`${draft.district} · ${draft.travelRadiusKm.trim()||'?'} km radius`:'Not chosen'}</dd></div>
+                  <div><dt>Service area</dt><dd>{draft.district?`${draft.district}${needsTravelRadius(draft)?` · ${draft.travelRadiusKm.trim()||'?'} km radius`:''}`:'Not chosen'}</dd></div>
                   <div><dt>Documents</dt><dd>{pickedCount} of {documentTypes.length} added</dd></div>
                   <div><dt>Payout</dt><dd>{draft.payout==='upi'?(draft.upiId.trim()?`UPI ${draft.upiId.trim()}`:'UPI, not entered'):(draft.accountNumber.trim().length>=4?`${draft.bankName.trim()||'Bank'} account ending ${draft.accountNumber.trim().slice(-4)}`:'Bank account, not entered')}</dd></div>
                 </dl>

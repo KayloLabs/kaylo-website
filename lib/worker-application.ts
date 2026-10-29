@@ -1,9 +1,10 @@
 // Worker applications from the website: the same contract the Kaylo Partner app
 // uses. Every rule here mirrors `submit_worker_application` (kaylo-app
-// migration 0027) and the `worker-application-documents` function, so the server
-// never rejects a form the website accepted. Public configuration is the admin
+// migration 0043) and the `worker-application-documents` function. The server
+// remains authoritative. Public configuration is the admin
 // portal's `loadPortalConfig()`; callers pass it in.
 import type {PortalConfig,Status} from './admin-api';
+import {requiredDocuments,type ApplicationDocumentType} from './partner-documents.ts';
 export type {PortalConfig,Status};
 
 /** The 14 districts a worker can serve. Same list and order as the Partner app. */
@@ -11,22 +12,41 @@ export const keralaDistricts=['Alappuzha','Ernakulam','Idukki','Kannur','Kasarag
 export type District=(typeof keralaDistricts)[number];
 
 export const documentTypes=['photo','aadhaar_front','aadhaar_back','police_certificate','selfie'] as const;
-export type DocumentType=(typeof documentTypes)[number];
-export const documentLabels:Record<DocumentType,string>={photo:'Profile photo',aadhaar_front:'Aadhaar front',aadhaar_back:'Aadhaar back',police_certificate:'Police clearance certificate',selfie:'Selfie'};
-export const documentHints:Record<DocumentType,string>={photo:'A clear, recent photo of your face.',aadhaar_front:'The front of your Aadhaar card, with your name and photo readable.',aadhaar_back:'The back of your Aadhaar card, with the address readable.',police_certificate:'Your police clearance certificate, as a photo, scan or PDF.',selfie:'A selfie taken now, showing your face clearly.'};
+export type DocumentType=ApplicationDocumentType;
+export const documentLabels:Record<DocumentType,string>={photo:'Profile photo',aadhaar_front:'Aadhaar front',aadhaar_back:'Aadhaar back',police_certificate:'Police clearance certificate',selfie:'Selfie',medical_council_reg:'Medical council registration',medical_degree:'Medical qualification',clinic_proof:'Clinic / practice address proof',caregiver_cert:'Caregiver training certificate'};
+export const documentHints:Record<DocumentType,string>={photo:'A clear, recent photo of your face.',aadhaar_front:'The front of your Aadhaar card, with your name and photo readable.',aadhaar_back:'The back of your Aadhaar card, with the address readable.',police_certificate:'Your police clearance certificate, as a photo, scan or PDF.',selfie:'A selfie taken now, showing your face clearly.',medical_council_reg:'Your medical council registration document.',medical_degree:'Your medical qualification document.',clinic_proof:'A document showing your clinic or practice address.',caregiver_cert:'Your caregiver training certificate. Supply the actual document for review.'};
 export const imageOnlyDocuments:ReadonlySet<DocumentType>=new Set<DocumentType>(['photo','selfie']);
 export const maxDocumentBytes=10*1024*1024;
 export type DocumentMime='image/jpeg'|'image/png'|'application/pdf';
 
 export type ServiceOption={service_id:string;service_name:string};
 export type PayoutMethod='upi'|'bank';
+export const applicationRoles=['worker','doctor','caregiver'] as const;
+export type ApplicationRole=(typeof applicationRoles)[number];
+export const roleLabels:Record<ApplicationRole,string>={worker:'Service professional',doctor:'Doctor',caregiver:'Caregiver'};
+export const consultationModes=['clinic','homeVisit','teleconsult'] as const;
+export type ConsultationMode=(typeof consultationModes)[number];
+export const consultationLabels:Record<ConsultationMode,string>={clinic:'Clinic',homeVisit:'Home visit',teleconsult:'Remote consultation'};
+// Existing Partner app choices; these describe offered services, not credentials.
+export const caregiverServices=['Elderly Companion','Mobility & Bedridden Support','Post-Hospital Recovery','Dementia & Memory Care','Vital Signs & Medication Monitoring','Respite Care'] as const;
+export const caregiverLanguages=['Malayalam','English','Hindi','Tamil'] as const;
+export const requiredApplicationDocuments=(role:ApplicationRole):DocumentType[]=>requiredDocuments(role) as DocumentType[];
+export const needsTravelRadius=(d:ApplicationDraft)=>d.role!=='doctor'||d.consultationModes.includes('homeVisit');
 export type ApplicationDraft={
+  role:ApplicationRole;
   fullName:string;phone:string;email:string;
   profession:string;services:string[];experienceYears:string;district:string;travelRadiusKm:string;
+  medicalCouncilNumber:string;clinicAddress:string;consultationModes:ConsultationMode[];consultationFee:string;
+  caregiverTraining:string;hourlyRate:string;languages:string[];
   payout:PayoutMethod;upiId:string;accountHolder:string;bankName:string;accountNumber:string;confirmAccountNumber:string;ifsc:string;
   consent:boolean;
 };
-export const emptyDraft:ApplicationDraft={fullName:'',phone:'',email:'',profession:'',services:[],experienceYears:'',district:'',travelRadiusKm:'15',payout:'upi',upiId:'',accountHolder:'',bankName:'',accountNumber:'',confirmAccountNumber:'',ifsc:'',consent:false};
+export const emptyDraft:ApplicationDraft={role:'worker',fullName:'',phone:'',email:'',profession:'',services:[],experienceYears:'',district:'',travelRadiusKm:'15',medicalCouncilNumber:'',clinicAddress:'',consultationModes:[],consultationFee:'',caregiverTraining:'',hourlyRate:'',languages:[],payout:'upi',upiId:'',accountHolder:'',bankName:'',accountNumber:'',confirmAccountNumber:'',ifsc:'',consent:false};
+/** Never carry one role's professional claims or address into another role. */
+export function changeApplicationRole(d:ApplicationDraft,role:ApplicationRole):ApplicationDraft{
+  if(d.role===role)return d;
+  return {...d,role,profession:'',services:[],medicalCouncilNumber:'',clinicAddress:'',consultationModes:[],consultationFee:'',caregiverTraining:'',hourlyRate:'',languages:[],consent:false};
+}
 export type DraftField=keyof ApplicationDraft;
 export type DraftErrors=Partial<Record<DraftField,string>>;
 
@@ -58,6 +78,7 @@ const within=(n:number,min:number,max:number)=>Number.isInteger(n)&&n>=min&&n<=m
 
 export function validateIdentity(d:ApplicationDraft):DraftErrors{
   const errors:DraftErrors={};
+  if(!(applicationRoles as readonly string[]).includes(d.role))errors.role='Choose your partner type.';
   if(trimmed(d.fullName)<2||trimmed(d.fullName)>120)errors.fullName='Enter your full name, 2 to 120 characters.';
   if(!phonePattern.test(canonicalPhone(d.phone)))errors.phone='Enter a valid phone number with country code.';
   const email=d.email.trim().toLowerCase();
@@ -67,16 +88,29 @@ export function validateIdentity(d:ApplicationDraft):DraftErrors{
 export function validateWork(d:ApplicationDraft,activeServiceIds:Iterable<string>):DraftErrors{
   const errors:DraftErrors={};
   const active=new Set(activeServiceIds);
-  if(trimmed(d.profession)<2||trimmed(d.profession)>120)errors.profession='Enter your profession, 2 to 120 characters.';
+  if(d.role!=='caregiver'&&(trimmed(d.profession)<2||trimmed(d.profession)>120))errors.profession='Enter your profession or specialty, 2 to 120 characters.';
   const chosen=[...new Set(d.services)];
-  if(chosen.length<servicesRange.min)errors.services='Choose at least one service.';
-  else if(chosen.length>servicesRange.max)errors.services='Choose up to 30 services.';
-  else if(chosen.some(id=>!active.has(id)))errors.services='Choose services from the current list.';
+  if(d.role!=='doctor'){
+    if(chosen.length<servicesRange.min)errors.services='Choose at least one service.';
+    else if(chosen.length>servicesRange.max)errors.services='Choose up to 30 services.';
+    else if(chosen.some(id=>d.role==='caregiver'?!(caregiverServices as readonly string[]).includes(id):!active.has(id)))errors.services='Choose services from the current list.';
+  }
+  if(d.role==='doctor'){
+    if(trimmed(d.medicalCouncilNumber)<2||trimmed(d.medicalCouncilNumber)>120)errors.medicalCouncilNumber='Enter your medical council number, 2 to 120 characters.';
+    if(trimmed(d.clinicAddress)<3||trimmed(d.clinicAddress)>500)errors.clinicAddress='Enter your clinic or practice address, 3 to 500 characters.';
+    if(d.consultationModes.length<1||d.consultationModes.length>3||d.consultationModes.some(m=>!(consultationModes as readonly string[]).includes(m)))errors.consultationModes='Choose at least one consultation mode.';
+    if(!/^[0-9]{1,5}(\.[0-9]{1,2})?$/.test(d.consultationFee.trim())||Number(d.consultationFee)<1||Number(d.consultationFee)>50000)errors.consultationFee='Enter a consultation fee from ₹1 to ₹50,000, with up to two decimals.';
+  }
+  if(d.role==='caregiver'){
+    if(trimmed(d.caregiverTraining)<2||trimmed(d.caregiverTraining)>120)errors.caregiverTraining='Describe your training and experience, 2 to 120 characters.';
+    if(!/^[0-9]{1,4}(\.[0-9]{1,2})?$/.test(d.hourlyRate.trim())||Number(d.hourlyRate)<1||Number(d.hourlyRate)>10000)errors.hourlyRate='Enter an hourly rate from ₹1 to ₹9,999.99, with up to two decimals.';
+    if(d.languages.some(l=>!(caregiverLanguages as readonly string[]).includes(l)))errors.languages='Choose languages from the list.';
+  }
   const years=d.experienceYears.trim();
   if(!digits.test(years)||years.length>2||!within(Number(years),experienceRange.min,experienceRange.max))errors.experienceYears='Enter experience from 0 to 70 years.';
   if(!(keralaDistricts as readonly string[]).includes(d.district))errors.district='Choose your district.';
   const radius=d.travelRadiusKm.trim();
-  if(!digits.test(radius)||!within(Number(radius),radiusRange.min,radiusRange.max))errors.travelRadiusKm='Enter a radius between 1 and 100 km.';
+  if(needsTravelRadius(d)&&(!digits.test(radius)||!within(Number(radius),radiusRange.min,radiusRange.max)))errors.travelRadiusKm='Enter a radius between 1 and 100 km.';
   return errors;
 }
 export function validatePayout(d:ApplicationDraft):DraftErrors{
@@ -101,16 +135,21 @@ export function validateApplication(d:ApplicationDraft,activeServiceIds:Iterable
 
 export type BankAccount={account_holder:string;bank_name:string;account_number:string;ifsc:string};
 export type ApplicationDetails={
+  role:ApplicationRole;
   full_name:string;phone:string;email:string;profession:string;services:string[];experience_years:number;district:string;travel_radius_km:number;
   upi_id?:string;bank_account?:BankAccount;consent:boolean;
+  medical_council_number?:string;clinic_address?:string;consultation_modes?:ConsultationMode[];consultation_fee?:number;
+  caregiver_training?:string;hourly_rate?:number;languages?:string[];
 };
 /** The `p_details` payload, in the field order the Partner app sends. Validate first. */
 export function toDetails(d:ApplicationDraft):ApplicationDetails{
   const details:ApplicationDetails={
-    full_name:d.fullName.trim(),phone:canonicalPhone(d.phone),email:d.email.trim().toLowerCase(),profession:d.profession.trim(),
-    services:[...new Set(d.services)],experience_years:Number(d.experienceYears.trim()),district:d.district,travel_radius_km:Number(d.travelRadiusKm.trim()),
+    role:d.role,full_name:d.fullName.trim(),phone:canonicalPhone(d.phone),email:d.email.trim().toLowerCase(),profession:d.role==='caregiver'?'Caregiver':d.profession.trim(),
+    services:d.role==='doctor'?[]:[...new Set(d.services)],experience_years:Number(d.experienceYears.trim()),district:d.district,travel_radius_km:needsTravelRadius(d)?Number(d.travelRadiusKm.trim()):1,
     consent:d.consent===true,
   };
+  if(d.role==='doctor')Object.assign(details,{medical_council_number:d.medicalCouncilNumber.trim(),clinic_address:d.clinicAddress.trim(),consultation_modes:[...new Set(d.consultationModes)],consultation_fee:Number(d.consultationFee.trim())});
+  if(d.role==='caregiver')Object.assign(details,{caregiver_training:d.caregiverTraining.trim(),hourly_rate:Number(d.hourlyRate.trim()),languages:[...new Set(d.languages)]});
   if(d.payout==='upi')details.upi_id=d.upiId.trim();
   else details.bank_account={account_holder:d.accountHolder.trim(),bank_name:d.bankName.trim(),account_number:d.accountNumber.trim(),ifsc:d.ifsc.trim().toUpperCase()};
   return details;
@@ -124,8 +163,11 @@ export function newRequestToken():string{
 
 export type ErrorStage='services'|'submit'|'upload'|'status';
 export const connectionCode='CONNECTION';
-const definiteSubmitRejections=new Set(['INVALID_APPLICATION','INVALID_NAME','INVALID_PHONE','INVALID_EMAIL','CONSENT_REQUIRED','INVALID_SERVICE_AREA','INVALID_EXPERIENCE','INVALID_RADIUS','INVALID_SERVICES','INVALID_PAYOUT','INVALID_REQUEST_TOKEN','APPLICATION_ALREADY_EXISTS','IDENTITY_ALREADY_IN_USE','23505']);
+const definiteSubmitRejections=new Set(['INVALID_ROLE','INVALID_CARE_DETAILS','CARE_SERVICE_UNAVAILABLE','INVALID_APPLICATION','INVALID_NAME','INVALID_PHONE','INVALID_EMAIL','CONSENT_REQUIRED','INVALID_SERVICE_AREA','INVALID_EXPERIENCE','INVALID_RADIUS','INVALID_SERVICES','INVALID_PAYOUT','INVALID_REQUEST_TOKEN','APPLICATION_ALREADY_EXISTS','IDENTITY_ALREADY_IN_USE','23505']);
 const messages:Record<string,string>={
+  INVALID_ROLE:'Choose a partner type and submit again.',
+  INVALID_CARE_DETAILS:'Check your Care details, consultation choices and fee or hourly rate.',
+  CARE_SERVICE_UNAVAILABLE:'Care applications are unavailable right now. Please try again later.',
   CONNECTION:'Could not connect. Check your connection and retry.',
   UNREADABLE_RESPONSE:'Kaylo sent an unreadable reply. Please retry.',
   INVALID_APPLICATION:'The application could not be read. Check your details and try again.',
@@ -246,7 +288,7 @@ export async function uploadDocument(config:PortalConfig,receipt:Receipt,type:Do
 export type ApplicationStatus={reference:string;status:Status;documents_received:number};
 export const statusCopy:Record<Status,{title:string;body:string}>={
   submitted:{title:'Documents still needed',body:'Your details were received, but document upload is not complete. If this page is still open, retry the upload here. Otherwise contact Kaylo with your reference for help.'},
-  under_review:{title:'Application under review',body:'Your details and all five documents have been received. Kaylo will review them before deciding on your application. This reference is not a partner login.'},
+  under_review:{title:'Application under review',body:'Your details and required documents have been received. Kaylo will review them before deciding on your application. This reference is not a partner login.'},
   changes_requested:{title:'Changes requested',body:'Kaylo needs updated documents before reviewing your application again. Open the secure link sent to your email to see the instructions and submit replacements.'},
   approved:{title:'Application approved',body:'Kaylo sends your partner ID and temporary password to your delivery email after approval. If you have not received them, contact support. Your first sign-in requires a new password.'},
   rejected:{title:'Application not approved',body:'Kaylo has not approved this application. No partner login is available for it. Contact support with your reference for further help.'},
@@ -263,13 +305,14 @@ export async function checkApplicationStatus(config:PortalConfig,reference:strin
   return {reference:body.reference,status:body.status,documents_received:Number(body.documents_received)||0};
 }
 
-// Typed text survives a reload for this tab only. Files never leave memory.
-const draftKey='kaylo.application.draft.v1';
+// Only safe choices survive a reload. Identity, free text and files stay in memory.
+const legacyDraftKey='kaylo.application.draft.v1';
+const draftKey='kaylo.application.draft.v2';
 const sendingKey='kaylo.application.sending.v1';
 const referenceKey='kaylo.application.reference.v1';
 export const stepCount=4;
 export type StoredDraft={draft:ApplicationDraft;step:number;requestToken:string};
-export type StoredSending={receipt:Receipt;uploaded:DocumentType[]};
+export type StoredSending={receipt:Receipt;uploaded:DocumentType[];role:ApplicationRole};
 function storage():Storage|null{
   try{return typeof window==='undefined'?null:window.sessionStorage;}
   catch{return null;}
@@ -284,28 +327,38 @@ function writeJson(key:string,value:unknown){
 }
 const text=(value:unknown,fallback:string)=>typeof value==='string'?value:fallback;
 export function loadStoredDraft():StoredDraft|null{
+  // Older drafts included identity and bank details. Delete them rather than
+  // migrating private values back into the form or a new storage record.
+  writeJson(legacyDraftKey,null);
   const stored=readJson(draftKey) as Partial<StoredDraft>|null;
-  if(!stored||typeof stored!=='object'||!stored.draft||typeof stored.draft!=='object')return null;
+  if(!stored||typeof stored!=='object'||!stored.draft||typeof stored.draft!=='object'){writeJson(draftKey,null);return null;}
   const d=stored.draft as Partial<Record<DraftField,unknown>>;
-  const draft:ApplicationDraft={...emptyDraft};
-  for(const key of Object.keys(emptyDraft) as DraftField[]){
-    if(key==='services')draft.services=Array.isArray(d.services)?d.services.filter((v):v is string=>typeof v==='string'):[];
-    else if(key==='consent')draft.consent=d.consent===true;
-    else if(key==='payout')draft.payout=d.payout==='bank'?'bank':'upi';
-    else draft[key]=text(d[key],emptyDraft[key]);
-  }
-  const step=Number.isInteger(stored.step)&&(stored.step as number)>=0&&(stored.step as number)<stepCount?(stored.step as number):0;
-  const requestToken=requestTokenPattern.test(String(stored.requestToken))?String(stored.requestToken):newRequestToken();
-  return {draft,step,requestToken};
+  const role=applicationRole(d.role);
+  const draft:ApplicationDraft={...emptyDraft,role,services:role==='worker'?safeServiceChoices(d.services):[],payout:d.payout==='bank'?'bank':'upi'};
+  writeJson(draftKey,{draft:{role,services:draft.services,payout:draft.payout}});
+  // Identity, free text, consent, files and payout values must be supplied again.
+  // A new attempt token prevents a changed form from resuming an earlier payload.
+  return {draft,step:0,requestToken:newRequestToken()};
 }
-export function saveStoredDraft(value:StoredDraft){writeJson(draftKey,value);}
-export function clearStoredDraft(){writeJson(draftKey,null);}
+function safeServiceChoices(value:unknown):string[]{
+  return Array.isArray(value)?value.filter((v):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)).slice(0,30):[];
+}
+export function saveStoredDraft(value:StoredDraft){
+  writeJson(legacyDraftKey,null);
+  const role=applicationRole(value.draft.role);
+  writeJson(draftKey,{draft:{role,services:role==='worker'?safeServiceChoices(value.draft.services):[],payout:value.draft.payout==='bank'?'bank':'upi'}});
+}
+function applicationRole(value:unknown):ApplicationRole{return value==='doctor'||value==='caregiver'?value:'worker';}
+export function clearStoredDraft(){writeJson(legacyDraftKey,null);writeJson(draftKey,null);}
 export function loadStoredSending():StoredSending|null{
   const stored=readJson(sendingKey) as Partial<StoredSending>|null;
   const receipt=stored?.receipt;
   if(!receipt||typeof receipt.application_id!=='string'||typeof receipt.reference!=='string'||!requestTokenPattern.test(String(receipt.upload_token))||typeof receipt.upload_expires_at!=='string')return null;
-  const uploaded=Array.isArray(stored.uploaded)?stored.uploaded.filter((v):v is DocumentType=>(documentTypes as readonly string[]).includes(String(v))):[];
-  return {receipt:{application_id:receipt.application_id,reference:receipt.reference,upload_token:receipt.upload_token,upload_expires_at:receipt.upload_expires_at,status:receipt.status??'submitted'},uploaded};
+  // Pre-Care receipts did not carry a role; they were worker applications.
+  if(stored.role!==undefined&&!(applicationRoles as readonly unknown[]).includes(stored.role))return null;
+  const role=applicationRole(stored.role),required=requiredApplicationDocuments(role);
+  const uploaded=Array.isArray(stored.uploaded)?[...new Set(stored.uploaded.filter((v):v is DocumentType=>required.includes(v)))]:[];
+  return {receipt:{application_id:receipt.application_id,reference:receipt.reference,upload_token:receipt.upload_token,upload_expires_at:receipt.upload_expires_at,status:receipt.status??'submitted'},uploaded,role};
 }
 export function saveStoredSending(value:StoredSending){writeJson(sendingKey,value);}
 export function clearStoredSending(){writeJson(sendingKey,null);}
