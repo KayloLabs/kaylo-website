@@ -89,3 +89,7 @@ An older backend without audited payout reveal keeps payout data hidden.
 
 Additional checks: `node --test scripts/verify-pages.test.mjs` and
 `NEXT_PUBLIC_BASE_PATH=/kaylo-website node scripts/verify-pages.mjs out`.
+
+### Admin authenticator support
+
+The portal supports a Firebase Identity Platform TOTP challenge and enrollment flow. Enforcement is opt-in through the private Supabase function variable `KAYLO_ADMIN_REQUIRE_MFA=true`; this is not a browser setting. Password-only sessions can receive limited enrollment eligibility but cannot access applications when enforcement is enabled. Setup secrets remain in memory, and uncertain enrollment writes are read back rather than repeated. See [the rollout and recovery runbook](docs/admin-mfa-rollout.md) for project prerequisites, activation order and live checks. Source implementation does not imply MFA has been enabled in the live project.

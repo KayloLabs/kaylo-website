@@ -318,3 +318,12 @@
  .ops-shell{min-height:calc(100svh - 118px)}
 }
 @media(max-height:650px){.ops-login{padding-block:20px 35px}.ops-login-form .ops-k-mark{margin-bottom:16px}.ops-login-form>p{margin-bottom:24px}}
+
+/* Authenticator setup stays within the existing login layout. */
+.ops-mfa-setup { display: grid; gap: 1rem; margin-block: 1.25rem; }
+.ops-mfa-setup p { margin: 0; }
+.ops-mfa-key { display: block; overflow-wrap: anywhere; user-select: all; padding: 1rem; border: 1px solid var(--ops-line, #cad3c9); border-radius: .5rem; font-size: .95rem; letter-spacing: .1em; line-height: 1.8; }
+.ops-mfa-detail { font-size: .8rem; line-height: 1.6; }
+.ops-login-form > .ops-alert { margin-top: 1rem; }
+.ops-login-form > .ops-text-button { margin-top: 1rem; min-height: 44px; }
+.ops-login-form select { width: 100%; padding: .85rem; color: inherit; background: transparent; border: 1px solid var(--ops-line, #cad3c9); border-radius: .5rem; }
