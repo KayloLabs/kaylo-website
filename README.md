@@ -63,3 +63,29 @@ for a password or privileged key. Preserve `/kaylo-website` as the Pages base
 path when building with `npm run build:pages`.
 
 Admin application details contain only a masked payout summary. Full payout values require an explicit administrator reveal through `admin-applications` and migration `0055_admin_payout_privacy.sql`; the server records an attributable audit event before returning them. Reviewers cannot reveal payout credentials. The portal hides revealed values after one minute and when leaving the application.
+
+## Source checks and publication safeguards
+
+The `Website checks` workflow runs on pushes to the `source` branch. It verifies
+TypeScript, library/worker tests, and the Pages export with the project base path.
+Its artifact is named with the exact source commit. It does not publish or modify
+`main`. Publish that checked artifact's contents to the generated-site branch;
+never replace `main` with the source tree.
+
+`npm run build:pages` now checks the required routes, private-page metadata,
+local HTML/CSS links and assets, `.nojekyll`, and public configuration. It rejects
+source directories, symlinks, APK/AAB files, source maps and recognizable private
+credential material in the output. This is a defense against accidental packaging,
+not a substitute for credential management or a complete security audit.
+
+Admin transport has bounded response/body waits and cancels private requests on
+sign-out. An interrupted review is never automatically repeated: the portal reads
+the latest application revision and only reports confirmation when the expected
+status is present on a newer revision. Otherwise it refreshes the application and
+keeps the uncertain result visible. Document corrections also confirm status after
+an interrupted upload. Opening a correction link removes its token from the
+address bar; it remains only in memory, so a reload requires reopening the email.
+An older backend without audited payout reveal keeps payout data hidden.
+
+Additional checks: `node --test scripts/verify-pages.test.mjs` and
+`NEXT_PUBLIC_BASE_PATH=/kaylo-website node scripts/verify-pages.mjs out`.

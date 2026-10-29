@@ -4,6 +4,7 @@
 // remains authoritative. Public configuration is the admin
 // portal's `loadPortalConfig()`; callers pass it in.
 import type {PortalConfig,Status} from './admin-api';
+import {retryAfterSeconds,uploadRetryMessage} from './retry-feedback.ts';
 import {requiredDocuments,type ApplicationDocumentType} from './partner-documents.ts';
 export type {PortalConfig,Status};
 
@@ -167,6 +168,7 @@ const definiteSubmitRejections=new Set(['INVALID_ROLE','INVALID_CARE_DETAILS','C
 const messages:Record<string,string>={
   INVALID_ROLE:'Choose a partner type and submit again.',
   INVALID_CARE_DETAILS:'Check your Care details, consultation choices and fee or hourly rate.',
+  APPLICATION_RATE_LIMITED:'New applications are temporarily limited. Please try again later using these same details. If you already have a reference, check that application instead of starting another.',
   CARE_SERVICE_UNAVAILABLE:'Care applications are unavailable right now. Please try again later.',
   CONNECTION:'Could not connect. Check your connection and retry.',
   UNREADABLE_RESPONSE:'Kaylo sent an unreadable reply. Please retry.',
@@ -190,17 +192,17 @@ const messages:Record<string,string>={
   INVALID_FILE_TYPE:'Use an original JPEG, PNG or PDF file. Profile photos and selfies must be images.',
   UPLOAD_NOT_ALLOWED:'The upload session is no longer available. Contact Kaylo with your reference to finish your application.',
   UPLOAD_FAILED:'The upload did not complete. Your file is still here. Please retry.',
-  UPLOAD_INCOMPLETE:'Kaylo has not recorded all five documents yet. Please retry the upload.',
+  UPLOAD_INCOMPLETE:'Kaylo has not recorded all required documents yet. Please retry the upload.',
   INVALID_REFERENCE:'Enter the reference from your application.',
   APPLICATION_NOT_FOUND:'No application matches that reference. Check the reference and try again.',
 };
 /** Known codes become one plain sentence. Unknown codes are shown as they are. */
-export function applicationErrorMessage(code:string):string{
-  return messages[code]??`Kaylo could not complete this step (${code}). Try again, or email kayloapp@gmail.com with this code.`;
+export function applicationErrorMessage(code:string,retryAfter?:number):string{
+  return uploadRetryMessage(code,retryAfter)??messages[code]??`Kaylo could not complete this step (${code}). Try again, or email kayloapp@gmail.com with this code.`;
 }
 export class ApplicationError extends Error{
-  code:string;status:number;stage:ErrorStage;
-  constructor(stage:ErrorStage,code:string,status=0){super(applicationErrorMessage(code));this.name='ApplicationError';this.code=code;this.status=status;this.stage=stage;}
+  code:string;status:number;stage:ErrorStage;retryAfter:number|undefined;
+  constructor(stage:ErrorStage,code:string,status=0,retryAfter?:number){super(applicationErrorMessage(code,retryAfter));this.name='ApplicationError';this.code=code;this.status=status;this.stage=stage;this.retryAfter=retryAfter;}
   /** The server refused the details, so the same request will never succeed. Edit and resubmit with a new token. */
   get isDefiniteRejection(){return this.stage==='submit'&&definiteSubmitRejections.has(this.code);}
   /** The upload capability is gone; only Kaylo can ask for the missing documents now. */
@@ -208,13 +210,13 @@ export class ApplicationError extends Error{
 }
 
 const codeShape=/^[A-Z][A-Z0-9_]{2,}$/;
-async function readErrorCode(response:Response):Promise<string>{
+async function applicationFailure(stage:ErrorStage,response:Response):Promise<ApplicationError>{
   const body=await response.json().catch(()=>null);
   for(const candidate of [body?.error?.message,body?.message,body?.error,body?.code]){
-    if(typeof candidate==='string'&&codeShape.test(candidate))return candidate;
+    if(typeof candidate==='string'&&codeShape.test(candidate))return new ApplicationError(stage,candidate,response.status,retryAfterSeconds(response,body));
   }
-  if(typeof body?.code==='string'&&body.code)return body.code;
-  return `HTTP_${response.status}`;
+  if(typeof body?.code==='string'&&body.code)return new ApplicationError(stage,body.code,response.status,retryAfterSeconds(response,body));
+  return new ApplicationError(stage,`HTTP_${response.status}`,response.status,retryAfterSeconds(response,body));
 }
 function headers(config:PortalConfig,extra:Record<string,string>={}):Record<string,string>{
   return {apikey:config.supabaseAnonKey,Authorization:`Bearer ${config.supabaseAnonKey}`,...extra};
@@ -226,7 +228,7 @@ async function send(stage:ErrorStage,input:string,init:RequestInit):Promise<Resp
 
 export async function listServices(config:PortalConfig):Promise<ServiceOption[]>{
   const response=await send('services',`${config.supabaseUrl}/rest/v1/services?select=service_id,service_name&is_active=eq.true&order=service_name.asc`,{headers:headers(config,{Accept:'application/json'}),cache:'no-store',signal:AbortSignal.timeout(15000)});
-  if(!response.ok)throw new ApplicationError('services',await readErrorCode(response),response.status);
+  if(!response.ok)throw await applicationFailure('services',response);
   const body:unknown=await response.json().catch(()=>null);
   if(!Array.isArray(body))throw new ApplicationError('services','UNREADABLE_RESPONSE',response.status);
   return body.filter((row):row is ServiceOption=>typeof row?.service_id==='string'&&typeof row?.service_name==='string').map(row=>({service_id:row.service_id,service_name:row.service_name}));
@@ -240,7 +242,7 @@ export function receiptUsable(receipt:Receipt,now=Date.now()):boolean{
 export async function submitWorkerApplication(config:PortalConfig,details:ApplicationDetails,requestToken:string):Promise<Receipt>{
   if(!requestTokenPattern.test(requestToken))throw new ApplicationError('submit','INVALID_REQUEST_TOKEN');
   const response=await send('submit',`${config.supabaseUrl}/rest/v1/rpc/submit_worker_application`,{method:'POST',headers:headers(config,{'Content-Type':'application/json',Accept:'application/json'}),body:JSON.stringify({p_details:{...details,client_request_token:requestToken}}),cache:'no-store',signal:AbortSignal.timeout(20000)});
-  if(!response.ok)throw new ApplicationError('submit',await readErrorCode(response),response.status);
+  if(!response.ok)throw await applicationFailure('submit',response);
   const body=await response.json().catch(()=>null);
   if(!body||typeof body.application_id!=='string'||typeof body.reference!=='string'||!requestTokenPattern.test(String(body.upload_token))||typeof body.upload_expires_at!=='string')throw new ApplicationError('submit','UNREADABLE_RESPONSE',response.status);
   return {application_id:body.application_id,reference:body.reference,upload_token:body.upload_token,upload_expires_at:body.upload_expires_at,status:body.status};
@@ -279,8 +281,8 @@ export function buildDocumentForm(receipt:Pick<Receipt,'application_id'|'upload_
   return form;
 }
 export async function uploadDocument(config:PortalConfig,receipt:Receipt,type:DocumentType,file:Blob,mime:DocumentMime):Promise<void>{
-  const response=await send('upload',`${config.supabaseUrl}/functions/v1/worker-application-documents`,{method:'POST',headers:headers(config),body:buildDocumentForm(receipt,type,file,mime),cache:'no-store'});
-  if(!response.ok)throw new ApplicationError('upload',await readErrorCode(response),response.status);
+  const response=await send('upload',`${config.supabaseUrl}/functions/v1/worker-application-documents`,{method:'POST',headers:headers(config),body:buildDocumentForm(receipt,type,file,mime),cache:'no-store',signal:AbortSignal.timeout(60_000)});
+  if(!response.ok)throw await applicationFailure('upload',response);
   const body=await response.json().catch(()=>null);
   if(body?.ok!==true)throw new ApplicationError('upload','UNREADABLE_RESPONSE',response.status);
 }
@@ -298,7 +300,7 @@ export async function checkApplicationStatus(config:PortalConfig,reference:strin
   const ref=normalizeReference(reference);
   if(!referencePattern.test(ref))throw new ApplicationError('status','INVALID_REFERENCE');
   const response=await send('status',`${config.supabaseUrl}/rest/v1/rpc/worker_application_status`,{method:'POST',headers:headers(config,{'Content-Type':'application/json',Accept:'application/json'}),body:JSON.stringify({p_reference:ref}),cache:'no-store',signal:AbortSignal.timeout(15000)});
-  if(!response.ok)throw new ApplicationError('status',await readErrorCode(response),response.status);
+  if(!response.ok)throw await applicationFailure('status',response);
   const body=await response.json().catch(()=>undefined);
   if(body===null)throw new ApplicationError('status','APPLICATION_NOT_FOUND',response.status);
   if(!body||typeof body.reference!=='string'||typeof body.status!=='string')throw new ApplicationError('status','UNREADABLE_RESPONSE',response.status);

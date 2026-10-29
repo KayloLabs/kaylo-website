@@ -340,3 +340,18 @@ test('Care drafts never persist council numbers, addresses, training, languages 
     assert.equal(loadStoredSending(),null);
   }finally{delete (globalThis as {window?:unknown}).window;}
 });
+
+test('application budget refusal preserves the existing request for a later retry',async()=>{
+ const token='a'.repeat(64);
+ await withFetch(()=>Response.json({code:'P0001',message:'APPLICATION_RATE_LIMITED',details:'New applications are temporarily limited.'},{status:400}),async()=>{
+  await assert.rejects(submitWorkerApplication(config,toDetails(valid()),token),(error:unknown)=>error instanceof ApplicationError&&error.code==='APPLICATION_RATE_LIMITED'&&!error.isDefiniteRejection&&error.retryAfter===undefined&&/same details/.test(error.message));
+ });
+});
+test('upload admission limits keep the saved upload open and use the server retry delay',async()=>{
+ const receipt={application_id:'app-1',reference:'KA-X',upload_token:'a'.repeat(64),upload_expires_at:'2099-01-01T00:00:00Z',status:'submitted' as const};
+ for(const [code,status,delay] of [['UPLOAD_RATE_LIMITED',429,300],['UPLOAD_IN_PROGRESS',429,30],['UPLOAD_RETRY_REQUIRED',503,90]] as const){
+  await withFetch(()=>Response.json({error:{message:code},retry_after:delay},{status,headers:{'Retry-After':String(delay)}}),async()=>{
+   await assert.rejects(uploadDocument(config,receipt,'selfie',new Blob([1]),'image/png'),(error:unknown)=>error instanceof ApplicationError&&error.code===code&&!error.isUploadClosed&&error.retryAfter===delay&&/same file/.test(error.message));
+  });
+ }
+});

@@ -68,6 +68,7 @@ export function WorkerApplication(){
   pickedRef.current=picked;
   const inputs=useRef<Partial<Record<DocumentType,HTMLInputElement|null>>>({});
   const documentGeneration=useRef(0);
+  const lookupGeneration=useRef(0);
 
   useEffect(()=>{
     loadPortalConfig().then(setConfig).catch(e=>setConfigError(errorText(e)));
@@ -98,9 +99,10 @@ export function WorkerApplication(){
 
   const runLookup=useCallback(async(reference:string)=>{
     if(!config)return;
+    const generation=++lookupGeneration.current;
     setLookup(s=>({...s,reference,busy:true,error:'',result:null,auto:false}));
-    try{const result=await checkApplicationStatus(config,reference);setLookup(s=>({...s,result,busy:false}));}
-    catch(e){setLookup(s=>({...s,error:errorText(e),busy:false}));}
+    try{const result=await checkApplicationStatus(config,reference);if(generation===lookupGeneration.current)setLookup(s=>({...s,result,busy:false}));}
+    catch(e){if(generation===lookupGeneration.current)setLookup(s=>({...s,error:errorText(e),busy:false}));}
   },[config]);
   useEffect(()=>{if(config&&view==='status'&&lookup.auto&&lookup.reference)void runLookup(lookup.reference);},[config,view,lookup.auto,lookup.reference,runLookup]);
 
@@ -208,11 +210,13 @@ export function WorkerApplication(){
     finally{setBusy(false);}
   }
   function openStatus(reference:string){
+    lookupGeneration.current++;
     setJustSubmitted(false);
     setLookup({reference,result:null,error:'',busy:false,auto:false});
     setView('status');
   }
   function startNew(){
+    lookupGeneration.current++;
     saveStoredReference('');setJustSubmitted(false);
     setLookup({reference:'',result:null,error:'',busy:false,auto:false});
     setErrors({});setFormError('');setDirection(1);setStep(0);

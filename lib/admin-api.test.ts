@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {AdminSession,correctionRequest,PortalError} from './admin-api.ts';
+import {AdminSession,correctionRequest,PortalError,portalReply} from './admin-api.ts';
 const config={firebaseApiKey:'public',supabaseUrl:'https://project.supabase.co',supabaseAnonKey:'anon'};
 test('only authenticated admin session can make requests and signout clears access',async()=>{
  const previous=globalThis.fetch;const requests:string[]=[];
@@ -97,4 +97,92 @@ test('an old token refresh cannot sign out a newly authenticated administrator',
   finish(Response.json({error:'expired'},{status:401}));await assert.rejects(pending,/sign in/);
   assert.equal((await session.request<{token:string}>('list')).token,'Bearer token-2');
  }finally{globalThis.fetch=previous;Date.now=originalNow;}
+});
+
+
+test('an unresponsive JSON body times out instead of keeping the admin interface busy',async()=>{
+ const previous=globalThis.fetch;let signal:AbortSignal|undefined;
+ globalThis.fetch=async(_input,init)=>{signal=init?.signal as AbortSignal;return {json:()=>new Promise(()=>{})} as Response;};
+ try{
+  await assert.rejects(portalReply('https://project.supabase.co/test',{}, {timeoutMs:5}),(error:unknown)=>error instanceof PortalError&&error.code==='REQUEST_TIMEOUT'&&!error.outcomeUnknown);
+  assert.equal(signal?.aborted,true);
+ }finally{globalThis.fetch=previous;}
+});
+
+test('an uncertain review is read back once and never resubmitted',async()=>{
+ const previous=globalThis.fetch;const actions:string[]=[];
+ globalThis.fetch=async(input,init)=>{
+  if(String(input).includes('signInWithPassword'))return Response.json({idToken:'token',refreshToken:'refresh',expiresIn:3600});
+  const action=JSON.parse(String(init?.body)).action;actions.push(action);
+  if(action==='session')return Response.json({admin:{email:'admin@example.com',role:'admin'}});
+  if(action==='review')throw new TypeError('connection lost after commit');
+  return Response.json({application:{application_id:'one',version:8,status:'approved'}});
+ };
+ try{
+  const session=new AdminSession(config);await session.signIn('admin@example.com','password');
+  assert.deepEqual(await session.request('review',{application_id:'one',expected_version:7,decision:'approve'}),{reconciled:true,status:'approved'});
+  assert.deepEqual(actions,['session','review','detail']);
+ }finally{globalThis.fetch=previous;}
+});
+
+test('unchanged or conflicting status never turns an uncertain decision into success',async()=>{
+ const previous=globalThis.fetch;
+ try{
+  for(const application of [{application_id:'one',version:7,status:'under_review'},{application_id:'one',version:8,status:'rejected'},{application_id:'other',version:8,status:'approved'}]){
+   let writes=0,reads=0;
+   globalThis.fetch=async(input,init)=>{
+    if(String(input).includes('signInWithPassword'))return Response.json({idToken:'token',refreshToken:'refresh',expiresIn:3600});
+    const action=JSON.parse(String(init?.body)).action;
+    if(action==='session')return Response.json({admin:{email:'admin@example.com',role:'admin'}});
+    if(action==='review'){writes++;return Response.json({error:'ADMIN_REQUEST_UNAVAILABLE'},{status:503});}
+    reads++;return Response.json({application});
+   };
+   const session=new AdminSession(config);await session.signIn('admin@example.com','password');
+   await assert.rejects(session.request('review',{application_id:'one',expected_version:7,decision:'approve'}),(error:unknown)=>error instanceof PortalError&&error.outcomeUnknown);
+   assert.equal(writes,1);assert.equal(reads,1);
+  }
+ }finally{globalThis.fetch=previous;}
+});
+
+test('signout aborts a hung private read without waiting for its response',async()=>{
+ const previous=globalThis.fetch;let signal:AbortSignal|undefined;
+ globalThis.fetch=async(input,init)=>{
+  if(String(input).includes('signInWithPassword'))return Response.json({idToken:'token',refreshToken:'refresh',expiresIn:3600});
+  if(JSON.parse(String(init?.body)).action==='session')return Response.json({admin:{email:'admin@example.com',role:'admin'}});
+  signal=init?.signal as AbortSignal;return new Promise(()=>{});
+ };
+ try{
+  const session=new AdminSession(config);await session.signIn('admin@example.com','password');
+  const pending=assert.rejects(session.request('detail'),(error:unknown)=>error instanceof PortalError&&error.code==='SESSION_CHANGED');
+  await Promise.resolve();session.signOut();await pending;assert.equal(signal?.aborted,true);
+ }finally{globalThis.fetch=previous;}
+});
+
+test('an interrupted correction upload is marked uncertain and is never automatically retried',async()=>{
+ const previous=globalThis.fetch;let requests=0;
+ globalThis.fetch=async()=>{requests++;return new Promise(()=>{});};
+ try{
+  const form=new FormData();form.set('token','capability');
+  await assert.rejects(correctionRequest(config,form,{timeoutMs:5}),(error:unknown)=>error instanceof PortalError&&error.outcomeUnknown&&error.code==='REQUEST_TIMEOUT');
+  assert.equal(requests,1);
+ }finally{globalThis.fetch=previous;}
+});
+
+test('a pre-cancelled operation never starts a request or leaves an unhandled rejection',async()=>{
+ const previous=globalThis.fetch;let requests=0;
+ globalThis.fetch=async()=>{requests++;return Response.json({});};
+ try{
+  const controller=new AbortController();controller.abort();
+  await assert.rejects(portalReply('https://project.supabase.co/test',{}, {signal:controller.signal}),(error:unknown)=>error instanceof PortalError&&error.code==='REQUEST_CANCELLED');
+  assert.equal(requests,0);
+ }finally{globalThis.fetch=previous;}
+});
+
+test('correction upload admission feedback preserves the safe retry guidance',async()=>{
+ const previous=globalThis.fetch;
+ globalThis.fetch=async()=>Response.json({error:{message:'UPLOAD_RETRY_REQUIRED'},retry_after:90},{status:503,headers:{'Retry-After':'90'}});
+ try{
+  const form=new FormData();form.set('token','capability');
+  await assert.rejects(correctionRequest(config,form),(error:unknown)=>error instanceof PortalError&&error.outcomeUnknown&&error.code==='UPLOAD_RETRY_REQUIRED'&&/90 seconds.*same file/.test(error.message));
+ }finally{globalThis.fetch=previous;}
 });

@@ -92,3 +92,10 @@ h1 em,h2 em{font-style:italic;font-weight:600}
 @media(prefers-reduced-motion:reduce){.site-experience .hero-copy,.site-experience .service-moments{translate:none!important;transition:none!important}.final-cta .closing-button{transform:none}}
 @media(prefers-reduced-transparency:reduce){.real-phone .phone-nav{background:#dce5dc!important;backdrop-filter:none;-webkit-backdrop-filter:none}.real-phone .phone-nav [role=tab] .preview-glass-selection{background:#c7dbca;backdrop-filter:none;-webkit-backdrop-filter:none}}
 @media(forced-colors:active){.real-phone .phone-nav [role=tab] .preview-glass-selection{background:Highlight;border:1px solid Highlight;backdrop-filter:none}.real-phone .phone-nav [data-state=active]{color:HighlightText!important}}
+
+/* Native disclosure navigation remains usable by touch, keyboard and high contrast. */
+.desktop-nav a[aria-current="page"],.mobile-links a[aria-current="page"]{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:6px}
+.mobile-menu{min-width:44px;min-height:44px}
+.mobile-links a{display:flex;align-items:center;min-height:44px}
+main:focus:not(:focus-visible){outline:none}
+@media(min-width:901px){.mobile-links{display:none}}

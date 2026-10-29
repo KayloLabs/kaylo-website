@@ -1,10 +1,7 @@
-import {writeFile, readFile, access} from 'node:fs/promises';
-// Publish only the static export, never the private source tree or server credentials.
-for (const route of ['index.html','admin/index.html','application/update/index.html','professionals/index.html','services/index.html','download/index.html']) {
-  await access(`out/${route}`);
-}
-const config=JSON.parse(await readFile('server/kaylo-public-config.json','utf8'));
-const claims=JSON.parse(Buffer.from(config.supabaseAnonKey.split('.')[1],'base64url').toString());
-if (claims.role !== 'anon') throw new Error('Only the public Supabase anon key may be exported.');
+import {writeFile,readFile} from 'node:fs/promises';
+import {verifyPagesExport,verifyPublicConfig} from './verify-pages.mjs';
+// Publish only the verified static export, never source, server credentials or APKs.
+verifyPublicConfig(JSON.parse(await readFile('server/kaylo-public-config.json','utf8')));
 await writeFile('out/.nojekyll','');
-console.log('GitHub Pages export ready in out/.');
+const result=await verifyPagesExport('out',{basePath:(process.env.NEXT_PUBLIC_BASE_PATH??'').replace(/\/+$/,'')});
+console.log(`GitHub Pages export ready: ${result.routes} routes, ${result.files} files in out/.`);

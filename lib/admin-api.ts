@@ -1,3 +1,4 @@
+import {retryAfterSeconds,uploadRetryMessage} from './retry-feedback.ts';
 import publicConfig from '../server/kaylo-public-config.json' with {type:'json'};
 export type PortalConfig = { firebaseApiKey: string; supabaseUrl: string; supabaseAnonKey: string };
 export type Admin = { email: string; role: 'admin' | 'reviewer' };
@@ -13,7 +14,45 @@ export type Certificate = { certificate_id:string; issued_at:string; reference?:
 export type Detail = { application:Application; documents:ApplicationDocument[]; audit:AuditEvent[]; deliveries:Delivery[]; certificate:Certificate|null };
 export type Correction = { reference:string; status:Status; version:number; application_version?:number; expires_at?:string; completed?:boolean; requested_documents:{doc_type:string;note:string;received:boolean}[] };
 
-export class PortalError extends Error { status:number;code:string;constructor(message:string,status=0,code='') { super(message);this.status=status;this.code=code; } }
+export class PortalError extends Error {
+  status:number; code:string; outcomeUnknown:boolean;
+  constructor(message:string,status=0,code='',outcomeUnknown=false) {
+    super(message);this.name='PortalError';this.status=status;this.code=code;this.outcomeUnknown=outcomeUnknown;
+  }
+}
+export type PortalTransportOptions={timeoutMs?:number;signal?:AbortSignal;write?:boolean};
+/** Bound both response headers and body. Aborting a write does not undo its server transaction. */
+export async function portalReply(input:string,init:RequestInit={},options:PortalTransportOptions={}){
+  const controller=new AbortController();
+  const interrupted=()=>options.signal?.reason instanceof PortalError?options.signal.reason:
+    new PortalError('The request was cancelled. Please retry.',0,'REQUEST_CANCELLED',!!options.write);
+  let abortListener:(()=>void)|undefined;
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  const deadline=new Promise<never>((_,reject)=>{
+    abortListener=()=>{const error=interrupted();controller.abort(error);reject(error);};
+    if(options.signal?.aborted){abortListener();return;}
+    options.signal?.addEventListener('abort',abortListener,{once:true});
+    timer=setTimeout(()=>{
+      const error=new PortalError(options.write?'The response did not arrive. The change may already be saved; check its latest status before retrying.':'The connection took too long. Please retry.',0,'REQUEST_TIMEOUT',!!options.write);
+      controller.abort(error);reject(error);
+    },options.timeoutMs??20_000);
+  });
+  try{
+    return await Promise.race([deadline,(async()=>{
+      controller.signal.throwIfAborted();
+      const response=await fetch(input,{...init,signal:controller.signal,cache:'no-store',referrerPolicy:'no-referrer'});
+      const body=await response.json().catch(()=>null);
+      return {response,body};
+    })()]);
+  }catch(error){
+    if(error instanceof PortalError)throw error;
+    if(controller.signal.reason instanceof PortalError)throw controller.signal.reason;
+    throw new PortalError(options.write?'The connection was interrupted. The change may already be saved; check its latest status before retrying.':'Could not connect. Check your internet connection and retry.',0,'CONNECTION_FAILED',!!options.write);
+  }finally{
+    clearTimeout(timer);
+    if(abortListener)options.signal?.removeEventListener('abort',abortListener);
+  }
+}
 const messages:Record<string,string> = {
   ADMIN_ONLY:'This account does not have Kaylo administrator access.', FORBIDDEN:'You do not have permission for this action.',
   INVALID_TOKEN:'Your session has expired. Please sign in again.', UNAUTHORIZED:'Please sign in again.',
@@ -28,13 +67,13 @@ const messages:Record<string,string> = {
   FILE_TOO_LARGE:'Choose a file smaller than 10 MB.', INVALID_FILE_TYPE:'Use an original JPEG, PNG or PDF file.',
   PORTAL_NOT_CONFIGURED:'The review portal is awaiting its backend configuration. Please try again later.',
 };
-async function readResponse(response:Response) {
-  const body = await response.json().catch(()=>null);
-  if(!response.ok || body?.ok===false) {
-    const code=typeof body?.error?.message==='string'?body.error.message:typeof body?.code==='string'?body.code:typeof body?.error==='string'?body.error:'';
-    throw new PortalError(messages[code] || (response.status===401?'Your session has expired. Please sign in again.':response.status===403?'This account does not have permission for this action.':response.status===409?'The application has changed. Refresh and review it again.':'We could not complete that request. Your saved application is safe. Please retry.'),response.status,code);
+function readResponse(response:Response,body:unknown,write=false) {
+  const value=body as {ok?:boolean;error?:{message?:string}|string;code?:string}|null;
+  if(!response.ok || value?.ok===false) {
+    const code=typeof value?.error==='object'&&typeof value.error.message==='string'?value.error.message:typeof value?.code==='string'?value.code:typeof value?.error==='string'?value.error:'';
+    throw new PortalError(uploadRetryMessage(code,retryAfterSeconds(response,body)) || messages[code] || (response.status===401?'Your session has expired. Please sign in again.':response.status===403?'This account does not have permission for this action.':response.status===409?'The application has changed. Refresh and review it again.':'We could not complete that request. Your saved application is safe. Please retry.'),response.status,code,write&&response.status>=500);
   }
-  if(!body) throw new PortalError('The server returned an unreadable response. Please retry.');
+  if(!body||typeof body!=='object'||Array.isArray(body)) throw new PortalError(write?'The response could not be read. Check the latest status before retrying.':'The server returned an unreadable response. Please retry.',0,'UNREADABLE_RESPONSE',write);
   return body;
 }
 export async function loadPortalConfig():Promise<PortalConfig> {
@@ -48,26 +87,32 @@ export class AdminSession {
   private generation=0;
   private reads=new Map<string,Promise<unknown>>();
   private config:PortalConfig;
-  constructor(config:PortalConfig){this.config=config;}
+  private operations=new Set<AbortController>();
+  private timeoutMs:number;
+  constructor(config:PortalConfig,options:{timeoutMs?:number}={}){this.config=config;this.timeoutMs=options.timeoutMs??20_000;}
+  private async reply(input:string,init:RequestInit,write=false){
+    const operation=new AbortController();this.operations.add(operation);
+    try{return await portalReply(input,init,{timeoutMs:this.timeoutMs,signal:operation.signal,write});}
+    finally{this.operations.delete(operation);}
+  }
   async signIn(email:string,password:string):Promise<Admin> {
     this.signOut();
     const generation=this.generation;
-    const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(this.config.firebaseApiKey)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.trim(),password,returnSecureToken:true})});
-    const b=await r.json();
+    const {response:r,body:b}=await this.reply(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(this.config.firebaseApiKey)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.trim(),password,returnSecureToken:true})});
     if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
-    if(!r.ok) throw new PortalError(b.error?.message==='TOO_MANY_ATTEMPTS_TRY_LATER'?'Too many attempts. Please wait before trying again.':'Unable to sign in. Check your administrator email and password.');
+    if(!r.ok) throw new PortalError(b?.error?.message==='TOO_MANY_ATTEMPTS_TRY_LATER'?'Too many attempts. Please wait before trying again.':'Unable to sign in. Check your administrator email and password.');
+    if(typeof b?.idToken!=='string'||typeof b?.refreshToken!=='string'||!Number.isFinite(Number(b?.expiresIn)))throw new PortalError('Unable to read the sign-in response. Please retry.');
     this.token=b.idToken;this.refresh=b.refreshToken;this.expires=Date.now()+Number(b.expiresIn)*1000;
     try { const result=await this.request<{admin:Admin}>('session'); return result.admin; }
     catch(error){if(generation===this.generation)this.signOut();throw error;}
   }
-  signOut(){this.generation++;this.token='';this.refresh='';this.expires=0;this.refreshing=null;this.reads.clear();}
+  signOut(){this.generation++;this.token='';this.refresh='';this.expires=0;this.refreshing=null;this.reads.clear();for(const operation of this.operations)operation.abort(new PortalError('Please sign in again.',401,'SESSION_CHANGED'));this.operations.clear();}
   private async renewToken(){
       const generation=this.generation;
       const currentRefresh=this.refresh;
-      const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(this.config.firebaseApiKey)}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:currentRefresh})});
-      const b=await r.json();
+      const {response:r,body:b}=await this.reply(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(this.config.firebaseApiKey)}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:currentRefresh})});
       if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
-      if(!r.ok||this.refresh!==currentRefresh){this.signOut();throw new PortalError('Please sign in again.',401);}
+      if(!r.ok||this.refresh!==currentRefresh||typeof b?.id_token!=='string'||typeof b?.refresh_token!=='string'||!Number.isFinite(Number(b?.expires_in))){this.signOut();throw new PortalError('Please sign in again.',401);}
       this.token=b.id_token;this.refresh=b.refresh_token;this.expires=Date.now()+Number(b.expires_in)*1000;
   }
   private async accessToken(){
@@ -96,13 +141,33 @@ export class AdminSession {
     const generation=this.generation;
     const token=await this.accessToken();
     if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
-    const result=await readResponse(await fetch(`${this.config.supabaseUrl}/functions/v1/admin-applications`,{method:'POST',headers:{'Content-Type':'application/json',apikey:this.config.supabaseAnonKey,Authorization:`Bearer ${token}`},body:JSON.stringify({action,...params}),cache:'no-store'}));
-    if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
-    return result as T;
+    const write=['review','retry_delivery'].includes(action);
+    try{
+      const {response,body}=await this.reply(`${this.config.supabaseUrl}/functions/v1/admin-applications`,{method:'POST',headers:{'Content-Type':'application/json',apikey:this.config.supabaseAnonKey,Authorization:`Bearer ${token}`},body:JSON.stringify({action,...params})},write);
+      if(generation!==this.generation) throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
+      return readResponse(response,body,write) as T;
+    }catch(error){
+      if(generation!==this.generation)throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
+      // Never resend an uncertain decision. Read the authoritative revision once.
+      if(action==='review'&&error instanceof PortalError&&error.outcomeUnknown&&typeof params.application_id==='string'&&typeof params.expected_version==='number'){
+        try{
+          const latest=await this.send<Detail>('detail',{application_id:params.application_id});
+          const expectedStatus=params.decision==='approve'?'approved':params.decision==='reject'?'rejected':params.decision==='request_changes'?'changes_requested':null;
+          if(expectedStatus&&latest.application.application_id===params.application_id&&latest.application.version>params.expected_version&&latest.application.status===expectedStatus){
+            return {reconciled:true,status:expectedStatus} as T;
+          }
+        }catch{
+          if(generation!==this.generation)throw new PortalError('Please sign in again.',401,'SESSION_CHANGED');
+          // Preserve uncertainty; never turn a failed status read into a retry.
+        }
+      }
+      throw error;
+    }
   }
 }
-export async function correctionRequest(config:PortalConfig,body:FormData|{token:string}):Promise<{application:Correction}>{
+export async function correctionRequest(config:PortalConfig,body:FormData|{token:string},options:PortalTransportOptions={}):Promise<{application:Correction}>{
   const form=body instanceof FormData;
-  return readResponse(await fetch(`${config.supabaseUrl}/functions/v1/application-corrections`,{method:'POST',headers:{apikey:config.supabaseAnonKey,...(!form?{'Content-Type':'application/json'}:{})},body:form?body:JSON.stringify({action:'info',...body}),cache:'no-store'}));
+  const reply=await portalReply(`${config.supabaseUrl}/functions/v1/application-corrections`,{method:'POST',headers:{apikey:config.supabaseAnonKey,...(!form?{'Content-Type':'application/json'}:{})},body:form?body:JSON.stringify({action:'info',...body})},{timeoutMs:form?60_000:20_000,...options,write:form});
+  return readResponse(reply.response,reply.body,form) as {application:Correction};
 }
 export function formatDate(value?:string){return value?new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'}).format(new Date(value)):'Not yet';}
