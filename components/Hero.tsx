@@ -40,7 +40,7 @@ export function Hero() {
    </svg>
    <div className="hero-copy">
     <h1><span className="hero-line hero-line-first">Skilled people.</span>{' '}
-     <span className="hero-line hero-line-second"><em className="hero-accent">Right when<svg viewBox="0 0 420 30" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M8 21C100 5 275 4 412 17"/></svg></em></span>{' '}
+     <span className="hero-line hero-line-second"><em className="hero-accent">Right when</em></span>{' '}
      <span className="hero-line hero-line-third">you need them.</span></h1>
     <p className="hero-description">Kaylo connects you with trusted local professionals for the jobs that keep everyday life moving.</p>
     <div className="hero-actions"><a href={sitePath('/download/')} className="button">Get started <ArrowUpRight size={18} aria-hidden="true"/></a><a href="#how-it-works" className="text-link">How Kaylo works</a></div>

@@ -26,9 +26,7 @@
 .hero-playful .hero-copy{max-width:720px}
 .hero-playful h1{font-size:clamp(52px,6.25vw,88px);font-weight:650;line-height:1.1;letter-spacing:-.055em}
 .hero-line{display:block}
-.hero-playful .hero-accent{position:relative;display:inline-block;isolation:isolate;font-weight:600}
-.hero-accent>svg{position:absolute;inset:auto -3% -5%;width:106%;height:24px;z-index:-1;overflow:visible}
-.hero-accent>svg path{stroke:#e1bb5c;stroke-width:10;stroke-linecap:round;stroke-dasharray:430;stroke-dashoffset:0}
+.hero-playful .hero-accent{display:inline-block;font-weight:600}
 .hero-playful .hero-description{margin-top:32px;max-width:410px;font-size:17px}
 .hero-playful .hero-actions{margin-top:29px}
 .hero-playful .hero-actions .button{gap:13px;min-height:56px;padding-inline:27px;border-radius:10px}
@@ -42,10 +40,8 @@
 .site-experience:is([data-phase=ready],[data-phase=revealing]) .hero-line{animation:hero-line-open .9s cubic-bezier(.22,1,.36,1) both}
 .site-experience:is([data-phase=ready],[data-phase=revealing]) .hero-line-second{animation-delay:.1s}
 .site-experience:is([data-phase=ready],[data-phase=revealing]) .hero-line-third{animation-delay:.2s}
-.site-experience:is([data-phase=ready],[data-phase=revealing]) .hero-accent>svg path{animation:hero-underline 1.3s .45s cubic-bezier(.22,1,.36,1) both}
 .site-experience:is([data-phase=ready],[data-phase=revealing]) .hero-playful .moment-frame{animation:hero-photo-open .95s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(.12s + var(--moment-order)*.075s)}
 @keyframes hero-line-open{from{opacity:0;translate:0 30px;clip-path:inset(0 0 100%)}to{opacity:1;translate:0 0;clip-path:inset(-20% -10% -20%)}}
-@keyframes hero-underline{from{stroke-dashoffset:430}to{stroke-dashoffset:0}}
 @keyframes hero-photo-open{from{opacity:0;translate:0 38px;scale:.92}to{opacity:1;translate:0 0;scale:1}}
 
 /* Full-bleed service art. The areas are links, not decorative floating cards. */
@@ -130,7 +126,6 @@
  .hero-playful .hero-actions{gap:22px;margin-top:24px}
  .hero-playful .hero-actions .button{min-height:50px;padding:11px 21px;font-size:14px}
  .hero-playful .hero-actions .text-link{font-size:13px}
- .hero-accent>svg{height:18px;bottom:-8%}
  .hero-playful .service-moments{gap:9px;margin-top:36px;padding-inline:3px}
  .hero-playful .moment figcaption{font-size:8px;gap:1px;padding:7px 1px 8px}
  .hero-playful .moment figcaption svg{width:11px;height:11px}
@@ -148,9 +143,9 @@
  .brand-expressive p:not(.eyebrow){font-size:15px;line-height:1.8}
 }
 @media(prefers-reduced-motion:reduce){
- .site-experience .hero-playful .hero-line,.site-experience .hero-playful .moment-frame,.site-experience .hero-playful .hero-accent>svg path{animation:none!important}
+ .site-experience .hero-playful .hero-line,.site-experience .hero-playful .moment-frame{animation:none!important}
  .hero-playful .moment-frame{will-change:auto}.showcase-art,.showcase-arrow{transition:none}
  .showcase-ribbon-track{animation:none;will-change:auto}.showcase-motion-toggle{display:none}
  .hero-playful .moment:hover,.hero-playful .moment:focus-visible{transform:none}
 }
-@media(forced-colors:active){.hero-accent>svg path,.brand-expressive h2 em path{stroke:CanvasText}.showcase-area{border:1px solid CanvasText}.showcase-ribbon{border-top:1px solid CanvasText}.showcase-motion-toggle{border:1px solid ButtonText}}
+@media(forced-colors:active){.brand-expressive h2 em path{stroke:CanvasText}.showcase-area{border:1px solid CanvasText}.showcase-ribbon{border-top:1px solid CanvasText}.showcase-motion-toggle{border:1px solid ButtonText}}
