@@ -33,7 +33,7 @@ export function ServiceShowcase() {
    </motion.a>)}
   </div>
   <button type="button" className="showcase-motion-toggle" onClick={() => setPaused(value => !value)}
-   aria-pressed={paused} aria-label={paused ? 'Play service showcase motion' : 'Pause service showcase motion'}>
+   aria-label={paused ? 'Play service showcase motion' : 'Pause service showcase motion'}>
    {paused ? <Play size={14} aria-hidden="true"/> : <Pause size={14} aria-hidden="true"/>}
   </button>
  </div>;

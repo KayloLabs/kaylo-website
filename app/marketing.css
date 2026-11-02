@@ -70,7 +70,7 @@
 .showcase-ribbon-copy{display:flex;flex:none;align-items:center}
 .showcase-ribbon-copy>span{display:flex;align-items:center;gap:24px;padding-right:24px;white-space:nowrap;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
 .showcase-ribbon-copy i{font-style:normal;font-size:16px;line-height:1}
-.service-showcase[data-paused=true] .showcase-ribbon-track,.service-showcase:hover .showcase-ribbon-track,.service-showcase:focus-within .showcase-ribbon-track{animation-play-state:paused}
+.service-showcase[data-paused=true] .showcase-ribbon-track,.service-showcase:hover .showcase-ribbon-track,.showcase-panels:focus-within .showcase-ribbon-track{animation-play-state:paused}
 .showcase-motion-toggle{position:absolute;bottom:49px;left:16px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid #fff8;border-radius:50%;color:#fffdf4;background:#173e2e;z-index:4;box-shadow:none}
 .showcase-motion-toggle:focus-visible{outline-color:#f2d38b}
 @keyframes service-ribbon{to{transform:translateX(-50%)}}
