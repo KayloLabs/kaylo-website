@@ -123,6 +123,7 @@ export class PortalError extends Error {
     this.outcomeUnknown = outcomeUnknown;
   }
 }
+export type FinanceAction = 'list' | 'detail' | 'refund' | 'resolve_dispute' | 'replay_refund' | 'reconciliation' | 'review_exception' | 'retry_reconciliation';
 export type PortalTransportOptions = { timeoutMs?: number; signal?: AbortSignal; write?: boolean };
 /** Bound both response headers and body. Aborting a write does not undo its server transaction. */
 export async function portalReply(
@@ -203,6 +204,20 @@ const messages: Record<string, string> = {
   ADMIN_MFA_CONFIGURATION_INVALID:
     'Administrator authentication is temporarily unavailable. Contact the project owner.',
   ADMIN_ONLY: 'This account does not have Kaylo administrator access.',
+  ADMIN_ROLE_REQUIRED: 'Only an administrator can access payments and resolutions.',
+  FINANCE_OPERATION_UNAVAILABLE: 'Payments and resolutions are unavailable. The finance service may not be deployed or reachable. No outcome has been confirmed; refresh before retrying.',
+  BOOKING_NOT_FOUND: 'This booking could not be found. Refresh the payment cases and try again.',
+  REFUND_CAPTURE_REQUIRED: 'A captured online payment is required before a refund can be authorised.',
+  REFUND_MANUAL_POLICY_REVIEW_REQUIRED: 'This payment needs a policy review before a refund can be authorised.',
+  REFUND_REQUEST_ID_CONFLICT: 'This request reference was already used for a different action. Refresh and review the latest status.',
+  DISPUTE_ALREADY_RESOLVED: 'This dispute has already been resolved. Refresh to see the decision.',
+  DISPUTE_RESOLUTION_CONFLICT: 'A different resolution has already been recorded. Refresh before proceeding.',
+  DISPUTE_RESOLUTION_NOT_ALLOWED: 'This dispute cannot be resolved in its current state.',
+  DISPUTE_REFUND_REQUIRES_ONLINE_PAYMENT: 'A provider refund requires an online payment. Cash disputes need a separate resolution.',
+  PAYOUT_ALREADY_SETTLED: 'This earning has already been settled. A separate financial review is required.',
+  AUDIT_NOTE_REQUIRED: 'Add a reason between 5 and 500 characters.',
+  EXCEPTION_NOT_FOUND: 'The reconciliation exception is no longer available. Refresh the report.',
+  REVIEW_ID_CONFLICT: 'This review reference has already been used. Refresh the report.',
   FORBIDDEN: 'You do not have permission for this action.',
   INVALID_TOKEN: 'Your session has expired. Please sign in again.',
   UNAUTHORIZED: 'Please sign in again.',
@@ -225,7 +240,7 @@ const messages: Record<string, string> = {
   PORTAL_NOT_CONFIGURED:
     'The review portal is awaiting its backend configuration. Please try again later.',
 };
-function readResponse(response: Response, body: unknown, write = false) {
+function readResponse(response: Response, body: unknown, write = false, finance = false) {
   const value = body as
     | { ok?: boolean; error?: { message?: string } | string; code?: string }
     | null;
@@ -239,12 +254,16 @@ function readResponse(response: Response, body: unknown, write = false) {
       : '';
     throw new PortalError(
       uploadRetryMessage(code, retryAfterSeconds(response, body)) || messages[code] ||
-        (response.status === 401
+        (finance && (response.status >= 500 || (response.status === 404 && (!code || code === 'NOT_FOUND')))
+          ? messages.FINANCE_OPERATION_UNAVAILABLE
+          : response.status === 401
           ? 'Your session has expired. Please sign in again.'
           : response.status === 403
           ? 'This account does not have permission for this action.'
           : response.status === 409
           ? 'The application has changed. Refresh and review it again.'
+          : finance
+          ? 'The finance request could not be completed. Refresh the latest status before retrying.'
           : 'We could not complete that request. Your saved application is safe. Please retry.'),
       response.status,
       code,
@@ -287,6 +306,7 @@ export class AdminSession {
   private enrollmentChecking = false;
   private authenticationPending = false;
   private authorized = false;
+  private role: Admin['role'] | null = null;
   private reads = new Map<string, Promise<unknown>>();
   private config: PortalConfig;
   private operations = new Set<AbortController>();
@@ -344,6 +364,7 @@ export class AdminSession {
       typeof result.admin.email !== 'string'
     ) throw new PortalError('Unable to confirm administrator access. Please sign in again.');
     this.authorized = true;
+    this.role = result.admin.role;
     return result.admin;
   }
   async signIn(email: string, password: string): Promise<Admin | AdminAuthStep> {
@@ -608,6 +629,7 @@ export class AdminSession {
     this.expires = 0;
     this.refreshing = null;
     this.authorized = false;
+    this.role = null;
     this.challenge = null;
     this.enrollment = null;
     this.enrollmentExpires = 0;
@@ -681,16 +703,36 @@ export class AdminSession {
     if (key) this.reads.set(key, pending);
     return pending;
   }
-  private async send<T>(action: string, params: Record<string, unknown>): Promise<T> {
+  financeRequest<T>(action: FinanceAction, params: Record<string, unknown> = {}): Promise<T> {
+    if (!this.authorized) return Promise.reject(new PortalError('Please sign in and complete authentication.', 401, 'SIGN_IN_REQUIRED'));
+    if (this.role !== 'admin') return Promise.reject(new PortalError(messages.ADMIN_ROLE_REQUIRED, 403, 'ADMIN_ROLE_REQUIRED'));
+    // The server verifies current admin membership and MFA for every request.
+    // Finance reads have their own namespace; no financial write is retried here.
+    const key = ['list', 'detail', 'reconciliation'].includes(action)
+      ? `finance:${JSON.stringify({ ...params, action })}` : null;
+    if (key) {
+      const existing = this.reads.get(key);
+      if (existing) return existing as Promise<T>;
+    } else this.reads.clear();
+    const pending = this.send<T>(action, params, 'finance-operations').finally(() => {
+      if (key && this.reads.get(key) === pending) this.reads.delete(key);
+    });
+    if (key) this.reads.set(key, pending);
+    return pending;
+  }
+  private async send<T>(action: string, params: Record<string, unknown>, endpoint = 'admin-applications'): Promise<T> {
     const generation = this.generation;
     const token = await this.accessToken();
     if (generation !== this.generation) {
       throw new PortalError('Please sign in again.', 401, 'SESSION_CHANGED');
     }
-    const write = ['review', 'retry_delivery'].includes(action);
+    const finance = endpoint === 'finance-operations';
+    const write = finance
+      ? ['refund', 'resolve_dispute', 'replay_refund', 'review_exception', 'retry_reconciliation'].includes(action)
+      : ['review', 'retry_delivery'].includes(action);
     try {
       const { response, body } = await this.reply(
-        `${this.config.supabaseUrl}/functions/v1/admin-applications`,
+        `${this.config.supabaseUrl}/functions/v1/${endpoint}`,
         {
           method: 'POST',
           headers: {
@@ -698,21 +740,21 @@ export class AdminSession {
             apikey: this.config.supabaseAnonKey,
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ action, ...params }),
+          body: JSON.stringify({ ...params, action }),
         },
         write,
       );
       if (generation !== this.generation) {
         throw new PortalError('Please sign in again.', 401, 'SESSION_CHANGED');
       }
-      return readResponse(response, body, write) as T;
+      return readResponse(response, body, write, finance) as T;
     } catch (error) {
       if (generation !== this.generation) {
         throw new PortalError('Please sign in again.', 401, 'SESSION_CHANGED');
       }
       // Never resend an uncertain decision. Read the authoritative revision once.
       if (
-        action === 'review' && error instanceof PortalError && error.outcomeUnknown &&
+        !finance && action === 'review' && error instanceof PortalError && error.outcomeUnknown &&
         typeof params.application_id === 'string' && typeof params.expected_version === 'number'
       ) {
         try {

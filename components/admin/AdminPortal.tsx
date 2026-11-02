@@ -1,5 +1,6 @@
 'use client';
 import AdminSignIn from './AdminSignIn';
+import { FinancePanel } from './FinancePanel';
 import { type Payout, PayoutDetails } from './PayoutDetails';
 import { sitePath } from '../../lib/site-path';
 import { Wordmark } from '../Logo';
@@ -75,6 +76,8 @@ export default function AdminPortal() {
   const { theme, toggleTheme } = useAdminAppearance();
   const session = useRef<AdminSession | null>(null);
   const [admin, setAdmin] = useState<Admin | null>(null);
+  const [section, setSection] = useState<'applications' | 'finance'>('applications');
+  const [financePending, setFinancePending] = useState(false);
   const [configReady, setConfigReady] = useState(false);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
@@ -105,6 +108,7 @@ export default function AdminPortal() {
   const signOut = useCallback(() => {
     session.current?.signOut();
     setAdmin(null);
+    setSection('applications');
     setSelected(null);
     setDetail(null);
     setRows([]);
@@ -146,7 +150,7 @@ export default function AdminPortal() {
     return () => clearTimeout(t);
   }, [search]);
   useEffect(() => {
-    if (!admin || selected || !session.current) return;
+    if (!admin || selected || !session.current || section !== 'applications') return;
     let cancelled = false;
     setListing(true);
     setError('');
@@ -168,9 +172,9 @@ export default function AdminPortal() {
     return () => {
       cancelled = true;
     };
-  }, [admin, selected, filter, query, page, refresh, report]);
+  }, [admin, selected, filter, query, page, refresh, report, section]);
   useEffect(() => {
-    if (!admin || !selected || !session.current) {
+    if (!admin || !selected || !session.current || section !== 'applications') {
       setDetail(null);
       return;
     }
@@ -188,7 +192,7 @@ export default function AdminPortal() {
     return () => {
       cancelled = true;
     };
-  }, [admin, selected, refresh, report]);
+  }, [admin, selected, refresh, report, section]);
   async function perform<T>(action: string, body: Record<string, unknown> = {}): Promise<T> {
     if (!session.current) throw new Error('Please sign in.');
     return session.current.request<T>(action, body);
@@ -243,6 +247,10 @@ export default function AdminPortal() {
         : (
           <div className='ops-shell'>
             <main id='main' tabIndex={-1} className='ops-main'>
+              {admin.role === 'admin' && <nav className='ops-workspaces' aria-label='Administration areas'>
+                <button disabled={financePending} aria-current={section === 'applications' ? 'page' : undefined} onClick={() => { setSection('applications'); setError(''); setNotice(''); }}>Applications</button>
+                <button disabled={financePending} aria-current={section === 'finance' ? 'page' : undefined} onClick={() => { setSection('finance'); setError(''); setNotice(''); }}>Payments & resolutions</button>
+              </nav>}
               {error && (
                 <div role='alert' className='ops-alert'>
                   {error}
@@ -260,7 +268,9 @@ export default function AdminPortal() {
                   </button>
                 </div>
               )}
-              {selected
+              {section === 'finance' && admin.role === 'admin' && session.current
+                ? <FinancePanel session={session.current} onError={report} theme={theme} onPendingChange={setFinancePending}/>
+                : selected
                 ? (
                   <>
                     <button
