@@ -1,0 +1,42 @@
+.hero-playful{overflow:visible}
+
+/* Compact, adjoining service areas. Each single object breaks the top edge;
+   the panel never clips it and the copy keeps its own quiet left column. */
+.service-showcase{z-index:3;overflow:visible}
+.showcase-panels{overflow:visible;padding:0;margin:0}
+.showcase-area{min-height:280px;padding:54px 32px 58px;overflow:visible}
+.showcase-heading h2{font-size:clamp(38px,3.4vw,50px);line-height:1.05}
+.showcase-area>p{max-width:180px;width:46%;font-size:13px;line-height:1.55;margin-top:13px}
+.showcase-arrow{position:absolute;left:32px;bottom:56px;width:34px;height:34px}
+.showcase-arrow svg{width:18px;height:18px}
+.showcase-art,.showcase-home .showcase-art,.showcase-farm .showcase-art,.showcase-care .showcase-art{position:absolute;width:210px;height:210px;max-width:none;object-fit:contain;top:-62px;right:18px;bottom:auto;z-index:3;filter:drop-shadow(0 8px 7px #183e2e20);transform-origin:50% 80%;pointer-events:none}
+.showcase-home .showcase-art{transform:rotate(-9deg)}
+.showcase-farm .showcase-art{transform:rotate(4deg)}
+.showcase-care .showcase-art{transform:rotate(-5deg)}
+.showcase-art-shadow{position:absolute;top:125px;right:60px;width:110px;height:13px;border-radius:50%;background:#173e2e22;filter:blur(9px);transform:rotate(-5deg);pointer-events:none}
+.showcase-ribbon-copy>span{gap:21px;padding-right:21px}
+.showcase-ribbon-copy svg{flex:none;opacity:.8}
+.showcase-motion-toggle{left:auto;right:12px;bottom:48px;width:28px;height:28px;color:#fffdf4;background:#72568f;border-color:#fff7}
+@media(hover:hover) and (pointer:fine){.showcase-area:hover .showcase-art{transform:translateY(-5px) rotate(0)}}
+@media(min-width:651px) and (max-width:1100px){
+ .showcase-area{min-height:270px;padding:53px 24px 56px}
+ .showcase-heading h2{font-size:39px}
+ .showcase-area>p{font-size:12px;width:53%;max-width:135px}
+ .showcase-arrow{left:24px;bottom:54px}
+ .showcase-art,.showcase-home .showcase-art,.showcase-farm .showcase-art,.showcase-care .showcase-art{width:176px;height:176px;top:-56px;right:3px;bottom:auto}
+ .showcase-art-shadow{top:101px;right:38px;width:95px}
+}
+@media(max-width:650px){
+ /* Horizontal scrolling needs an explicit breathing strip above the colored
+    panels: overflow-y:visible would become auto and cut off the objects. */
+ .service-showcase{margin-top:28px}
+ .showcase-panels{padding-top:54px;padding-bottom:0;margin-top:-54px;margin-bottom:0;overflow-x:auto;overflow-y:hidden;scroll-padding-inline:0}
+ .showcase-area{flex-basis:86%;min-height:264px;padding:52px 24px 56px}
+ .showcase-heading h2{font-size:42px}
+ .showcase-area>p{width:58%;max-width:150px;font-size:13px;line-height:1.5}
+ .showcase-arrow{left:24px;bottom:54px;width:33px;height:33px}
+ .showcase-art,.showcase-home .showcase-art,.showcase-farm .showcase-art,.showcase-care .showcase-art{width:170px;height:170px;top:-57px;right:9px;bottom:auto}
+ .showcase-art-shadow{top:96px;right:42px;width:95px;height:11px}
+ .showcase-motion-toggle{right:12px;bottom:48px}
+}
+@media(prefers-reduced-motion:reduce){.showcase-area:hover .showcase-art{transform:none}}

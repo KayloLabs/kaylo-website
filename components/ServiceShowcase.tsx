@@ -1,14 +1,14 @@
 'use client';
 
 import {useRef, useState} from 'react';
-import {ArrowUpRight, Pause, Play} from 'lucide-react';
+import {ArrowUpRight, House, Leaf, Heart, Pause, Play} from 'lucide-react';
 import {motion, useInView, useReducedMotion} from 'motion/react';
 import {sitePath} from '../lib/site-path';
 
 const areas = [
- {name: 'Home', art: 'mode_home', services: ['Electrical work', 'Plumbing', 'Cleaning', 'Repairs'], detail: 'Repairs, cleaning & everyday fixes'},
- {name: 'Farm', art: 'mode_farm', services: ['Coconut harvesting', 'Gardening', 'Farm support'], detail: 'Land, gardens & the next harvest'},
- {name: 'Care', art: 'mode_care', services: ['Doctor appointments', 'Caregivers', 'Everyday assistance'], detail: 'Doctors, caregivers & your loved ones'},
+ {name: 'Home', art: 'showcase-home-tool', Icon: House, services: ['Electrical work', 'Plumbing', 'Cleaning', 'Repairs'], detail: 'Repairs, cleaning & everyday fixes'},
+ {name: 'Farm', art: 'showcase-farm-sprout', Icon: Leaf, services: ['Coconut harvesting', 'Gardening', 'Farm support'], detail: 'Land, gardens & the next harvest'},
+ {name: 'Care', art: 'showcase-care-stethoscope', Icon: Heart, services: ['Doctor appointments', 'Caregivers', 'Everyday assistance'], detail: 'Doctors, caregivers & your loved ones'},
 ];
 
 export function ServiceShowcase() {
@@ -22,13 +22,15 @@ export function ServiceShowcase() {
     className={`showcase-area showcase-${area.name.toLowerCase()}`}
     href={sitePath(`/services/?category=${area.name}`)}
     aria-label={`Explore Kaylo ${area.name}: ${area.detail}`}
-    initial={false} whileInView={reduced ? {} : {y: [28, 0], opacity: [.75, 1]}}
+    initial={false} whileInView={reduced ? {} : {y: [18, 0], opacity: [.85, 1]}}
     viewport={{once: true, amount: .2}} transition={{duration: .7, delay: index * .09, ease: [.22, 1, .36, 1]}}>
-    <div className="showcase-heading"><h2>{area.name}</h2><span className="showcase-arrow"><ArrowUpRight aria-hidden="true"/></span></div>
+    <div className="showcase-heading"><h2>{area.name}</h2></div>
     <p>{area.detail}</p>
-    <img className="showcase-art" src={sitePath(`/app-art/${area.art}.png`)} alt="" width="1024" height="1024" loading="lazy"/>
+    <span className="showcase-arrow" aria-hidden="true"><ArrowUpRight/></span>
+    <span className="showcase-art-shadow" aria-hidden="true"/>
+    <img className="showcase-art" src={sitePath(`/images/${area.art}.png`)} alt="" width="1024" height="1024" loading="lazy"/>
     <div className="showcase-ribbon" aria-hidden="true"><div className="showcase-ribbon-track">
-     {[0, 1].map(copy => <span className="showcase-ribbon-copy" key={copy}>{area.services.map(service => <span key={service}>{service}<i>✳</i></span>)}</span>)}
+     {[0, 1].map(copy => <span className="showcase-ribbon-copy" key={copy}>{area.services.map(service => <span key={service}>{service}<area.Icon size={13} strokeWidth={1.6}/></span>)}</span>)}
     </div></div>
    </motion.a>)}
   </div>
