@@ -1,6 +1,6 @@
 :HL["/kaylo-website/_next/static/media/2f877a252b76ecef-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
 :HL["/kaylo-website/_next/static/media/b60b21974a62beff-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
 :HL["/kaylo-website/_next/static/media/dd867eac9d8707d9-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
-:HL["/kaylo-website/_next/static/css/1a1499b2b9f8e971.css","style"]
+:HL["/kaylo-website/_next/static/css/55f0051bbbff52b4.css","style"]
 :HL["/kaylo-website/_next/static/css/e86b4c339f3279d5.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"BPVEz8r64eSKWeTMiFxUq"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"zeM7_mqWfF-2iEN3K2Kxq"}
