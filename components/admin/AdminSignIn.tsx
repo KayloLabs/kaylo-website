@@ -136,7 +136,7 @@ export default function AdminSignIn({ session, ready, connectionError, retry, on
             ? 'Enter the current code from your authenticator app.'
             : step?.kind === 'enrollment'
             ? 'An authenticator is required before you can open partner applications.'
-            : 'Manage partner applications.'}
+            : 'Manage partner operations.'}
         </p>
         {notice && <p role='status' className='ops-notice'>{notice}</p>}
         {step?.kind === 'enrollment' && !setup

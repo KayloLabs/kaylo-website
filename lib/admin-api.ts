@@ -60,6 +60,19 @@ export type Application = {
 export type ApplicationSummary =
   & Pick<Application, 'application_id' | 'reference' | 'status' | 'version' | 'submitted_at'>
   & { full_name: string; profession: string; district: string };
+export type ApplicationListParams = {
+  status?: Status;
+  search: string;
+  page: number;
+  page_size: number;
+};
+export type ApplicationListPage = { applications: ApplicationSummary[]; total: number };
+export const initialApplicationList: ApplicationListParams = {
+  status: 'under_review', search: '', page: 1, page_size: 20,
+};
+export function applicationListKey(params: ApplicationListParams) {
+  return JSON.stringify([params.status ?? '', params.search.trim(), params.page, params.page_size]);
+}
 export type ApplicationDocument = {
   doc_type: string;
   content_type: string;
@@ -197,6 +210,13 @@ export async function portalReply(
   }
 }
 const messages: Record<string, string> = {
+  SUPPORT_UNAVAILABLE: 'Support is unavailable. Refresh its current status or retry the same saved update.',
+  SUPPORT_VERSION_CONFLICT: 'This request changed while you were reviewing it. Refresh the request before editing.',
+  SUPPORT_RATE_LIMIT: 'The support request limit has been reached. Check the existing request history.',
+  SUPPORT_HISTORY_LIMIT: 'This request has reached its history limit. Review the existing conversation.',
+  REQUEST_CONFLICT: 'This action reference was used with different details. Refresh before continuing.',
+  REQUEST_NOT_FOUND: 'This request is no longer available. Refresh the queue.',
+  REPLY_REQUIRED: 'Add a reply before asking for information or resolving a request.',
   ADMIN_MFA_REQUIRED: 'Sign in again and enter your authenticator code to access Kaylo Admin.',
   ADMIN_EMAIL_VERIFICATION_REQUIRED:
     'Verify your administrator email before setting up an authenticator.',
@@ -204,6 +224,7 @@ const messages: Record<string, string> = {
   ADMIN_MFA_CONFIGURATION_INVALID:
     'Administrator authentication is temporarily unavailable. Contact the project owner.',
   ADMIN_ONLY: 'This account does not have Kaylo administrator access.',
+  ADMIN_ACCESS_REQUIRED: 'Your administrator access is no longer available. Please sign in again.',
   ADMIN_ROLE_REQUIRED: 'Only an administrator can access payments and resolutions.',
   FINANCE_OPERATION_UNAVAILABLE: 'Payments and resolutions are unavailable. The finance service may not be deployed or reachable. No outcome has been confirmed; refresh before retrying.',
   BOOKING_NOT_FOUND: 'This booking could not be found. Refresh the payment cases and try again.',
@@ -240,7 +261,7 @@ const messages: Record<string, string> = {
   PORTAL_NOT_CONFIGURED:
     'The review portal is awaiting its backend configuration. Please try again later.',
 };
-function readResponse(response: Response, body: unknown, write = false, finance = false) {
+function readResponse(response: Response, body: unknown, write = false, finance = false, privacy = false) {
   const value = body as
     | { ok?: boolean; error?: { message?: string } | string; code?: string }
     | null;
@@ -260,6 +281,8 @@ function readResponse(response: Response, body: unknown, write = false, finance 
           ? 'Your session has expired. Please sign in again.'
           : response.status === 403
           ? 'This account does not have permission for this action.'
+          : privacy
+          ? 'The privacy request could not be completed. Refresh its current status before retrying.'
           : response.status === 409
           ? 'The application has changed. Refresh and review it again.'
           : finance
@@ -308,6 +331,11 @@ export class AdminSession {
   private authorized = false;
   private role: Admin['role'] | null = null;
   private reads = new Map<string, Promise<unknown>>();
+  // Summary pages only, scoped to this authenticated in-memory session. Never
+  // persist application documents, signed links or private detail responses.
+  private lists = new Map<string, { page: ApplicationListPage; receivedAt: number }>();
+  private listRevision = 0;
+  private initialListKey: string | null = null;
   private config: PortalConfig;
   private operations = new Set<AbortController>();
   private timeoutMs: number;
@@ -349,8 +377,8 @@ export class AdminSession {
   }
   private async resolveSession(): Promise<Admin | AdminAuthStep> {
     const result = await this.request<
-      { admin?: Admin; mfa?: { enrollment_required?: boolean; expires_at?: number } }
-    >('session');
+      { admin?: Admin; applications?: ApplicationListPage; mfa?: { enrollment_required?: boolean; expires_at?: number } }
+    >('session', { include_applications: true });
     if (
       result.mfa?.enrollment_required === true && typeof result.mfa.expires_at === 'number' &&
       result.mfa.expires_at > Date.now()
@@ -365,6 +393,11 @@ export class AdminSession {
     ) throw new PortalError('Unable to confirm administrator access. Please sign in again.');
     this.authorized = true;
     this.role = result.admin.role;
+    if (result.applications && Array.isArray(result.applications.applications) &&
+      Number.isSafeInteger(result.applications.total) && result.applications.total >= 0) {
+      this.rememberApplications(initialApplicationList, result.applications);
+      this.initialListKey = applicationListKey(initialApplicationList);
+    }
     return result.admin;
   }
   async signIn(email: string, password: string): Promise<Admin | AdminAuthStep> {
@@ -636,6 +669,7 @@ export class AdminSession {
     this.enrollmentChecking = false;
     this.authenticationPending = false;
     this.reads.clear();
+    this.invalidateApplications();
     for (const operation of this.operations) {
       operation.abort(new PortalError('Please sign in again.', 401, 'SESSION_CHANGED'));
     }
@@ -681,6 +715,47 @@ export class AdminSession {
     }
     return this.token;
   }
+  private invalidateApplications() {
+    this.listRevision++;
+    this.initialListKey = null;
+    this.lists.clear();
+  }
+  private rememberApplications(params: ApplicationListParams, page: ApplicationListPage) {
+    const key = applicationListKey(params);
+    this.lists.delete(key);
+    this.lists.set(key, { page: structuredClone(page), receivedAt: Date.now() });
+    while (this.lists.size > 8) this.lists.delete(this.lists.keys().next().value!);
+  }
+  cachedApplications(params: ApplicationListParams) {
+    if (!this.authorized) return null;
+    const key = applicationListKey(params);
+    const snapshot = this.lists.get(key);
+    if (!snapshot) return null;
+    if (Date.now() - snapshot.receivedAt > 30_000) {
+      this.lists.delete(key);
+      return null;
+    }
+    return structuredClone(snapshot);
+  }
+  async listApplications(params: ApplicationListParams, force = false): Promise<ApplicationListPage> {
+    if (!this.authorized) throw new PortalError('Please sign in again.', 401, 'SIGN_IN_REQUIRED');
+    const key = applicationListKey(params);
+    const first = this.cachedApplications(params);
+    // The sign-in response already checked current authorization and fetched
+    // this exact first page. Consume it once; all later visits revalidate.
+    if (!force && this.initialListKey === key && first && Date.now() - first.receivedAt < 5_000) {
+      this.initialListKey = null;
+      return first.page;
+    }
+    this.initialListKey = null;
+    const revision = this.listRevision;
+    const result = await this.request<ApplicationListPage>('list', params);
+    if (!Array.isArray(result.applications) || !Number.isSafeInteger(result.total) || result.total < 0) {
+      throw new PortalError('The application list could not be read. Please retry.');
+    }
+    if (revision === this.listRevision) this.rememberApplications(params, result);
+    return result;
+  }
   request<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
     if (action !== 'session' && !this.authorized) {
       return Promise.reject(
@@ -696,7 +771,10 @@ export class AdminSession {
     if (key) {
       const pending = this.reads.get(key);
       if (pending) return pending as Promise<T>;
-    } else this.reads.clear();
+    } else {
+      this.reads.clear();
+      if (['review', 'retry_delivery'].includes(action)) this.invalidateApplications();
+    }
     const pending = this.send<T>(action, params).finally(() => {
       if (key && this.reads.get(key) === pending) this.reads.delete(key);
     });
@@ -720,6 +798,28 @@ export class AdminSession {
     if (key) this.reads.set(key, pending);
     return pending;
   }
+  privacyRequest<T>(action: 'list' | 'detail' | 'process', params: Record<string, unknown> = {}): Promise<T> {
+    if (!this.authorized) return Promise.reject(new PortalError('Please sign in and complete authentication.', 401, 'SIGN_IN_REQUIRED'));
+    if (this.role !== 'admin') return Promise.reject(new PortalError('Only an administrator can handle account deletion requests.', 403, 'ADMIN_ROLE_REQUIRED'));
+    const key = action !== 'process' ? `privacy:${JSON.stringify({...params, action})}` : null;
+    if (key) {
+      const existing = this.reads.get(key);
+      if (existing) return existing as Promise<T>;
+    } else {
+      this.reads.clear();
+      this.invalidateApplications();
+    }
+    const pending = this.send<T>(action, params, 'privacy-operations').finally(() => {
+      if (key && this.reads.get(key) === pending) this.reads.delete(key);
+    });
+    if (key) this.reads.set(key, pending);
+    return pending;
+  }
+  supportRequest<T>(action: 'admin_list' | 'admin_detail' | 'admin_update', params: Record<string, unknown> = {}): Promise<T> {
+    if (!this.authorized) return Promise.reject(new PortalError('Please sign in and complete authentication.', 401, 'SIGN_IN_REQUIRED'));
+    if (this.role !== 'admin') return Promise.reject(new PortalError('Only an administrator can handle general support.', 403, 'ADMIN_ROLE_REQUIRED'));
+    return this.send<T>(action, params, 'support-requests');
+  }
   private async send<T>(action: string, params: Record<string, unknown>, endpoint = 'admin-applications'): Promise<T> {
     const generation = this.generation;
     const token = await this.accessToken();
@@ -727,7 +827,8 @@ export class AdminSession {
       throw new PortalError('Please sign in again.', 401, 'SESSION_CHANGED');
     }
     const finance = endpoint === 'finance-operations';
-    const write = finance
+    const privacy = endpoint === 'privacy-operations';
+    const write = endpoint === 'support-requests' ? action === 'admin_update' : privacy ? action === 'process' : finance
       ? ['refund', 'resolve_dispute', 'replay_refund', 'review_exception', 'retry_reconciliation'].includes(action)
       : ['review', 'retry_delivery'].includes(action);
     try {
@@ -747,10 +848,15 @@ export class AdminSession {
       if (generation !== this.generation) {
         throw new PortalError('Please sign in again.', 401, 'SESSION_CHANGED');
       }
-      return readResponse(response, body, write, finance) as T;
+      return readResponse(response, body, write, finance, privacy) as T;
     } catch (error) {
       if (generation !== this.generation) {
         throw new PortalError('Please sign in again.', 401, 'SESSION_CHANGED');
+      }
+      if (error instanceof PortalError && (error.status === 401 ||
+        ['ADMIN_ACCESS_REQUIRED', 'ADMIN_ONLY', 'ADMIN_MFA_REQUIRED', 'ADMIN_EMAIL_VERIFICATION_REQUIRED'].includes(error.code))) {
+        this.signOut();
+        throw error;
       }
       // Never resend an uncertain decision. Read the authoritative revision once.
       if (

@@ -1,6 +1,9 @@
 'use client';
 import AdminSignIn from './AdminSignIn';
 import { FinancePanel } from './FinancePanel';
+import { PrivacyPanel } from './PrivacyPanel';
+import { SupportPanel } from './SupportPanel';
+import ApplicationQueue from './ApplicationQueue';
 import { type Payout, PayoutDetails } from './PayoutDetails';
 import { sitePath } from '../../lib/site-path';
 import { Wordmark } from '../Logo';
@@ -11,21 +14,19 @@ import {
   ArrowUpRight,
   Check,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   Download,
   Eye,
   FileCheck2,
   FileText,
-  Inbox,
+  ClipboardList,
+  CreditCard,
   LoaderCircle,
-  LockKeyhole,
   LogOut,
   Mail,
   Moon,
   RefreshCw,
-  Search,
+  ShieldCheck,
   Sun,
   X,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ import {
   type Admin,
   AdminSession,
   type ApplicationSummary,
+  applicationListKey,
   type Detail,
   documentNames,
   formatDate,
@@ -76,7 +78,7 @@ export default function AdminPortal() {
   const { theme, toggleTheme } = useAdminAppearance();
   const session = useRef<AdminSession | null>(null);
   const [admin, setAdmin] = useState<Admin | null>(null);
-  const [section, setSection] = useState<'applications' | 'finance'>('applications');
+  const [section, setSection] = useState<'applications' | 'finance' | 'privacy' | 'support'>('applications');
   const [financePending, setFinancePending] = useState(false);
   const [configReady, setConfigReady] = useState(false);
   const [error, setError] = useState('');
@@ -85,14 +87,17 @@ export default function AdminPortal() {
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [rows, setRows] = useState<ApplicationSummary[]>([]);
+  const [rowsKey, setRowsKey] = useState('');
   const [total, setTotal] = useState(0);
   const [listing, setListing] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const forceListRefresh = useRef(false);
   const [refresh, setRefresh] = useState(0);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [notice, setNotice] = useState('');
-  const requestGeneration = useRef(0);
   const loadConfig = useCallback(() => {
     setError('');
     setConfigReady(false);
@@ -112,8 +117,16 @@ export default function AdminPortal() {
     setSelected(null);
     setDetail(null);
     setRows([]);
+    setRowsKey('');
+    setTotal(0);
+    setUpdatedAt(null);
+    setSearch('');
+    setQuery('');
+    setPage(1);
+    setPageSize(20);
+    forceListRefresh.current = false;
+    setFilter('under_review');
     setNotice('');
-    requestGeneration.current++;
   }, []);
   useEffect(() => {
     if (!admin) return;
@@ -138,7 +151,7 @@ export default function AdminPortal() {
     if (
       e instanceof PortalError &&
       (e.status === 401 ||
-        ['ADMIN_MFA_REQUIRED', 'ADMIN_EMAIL_VERIFICATION_REQUIRED'].includes(e.code))
+        ['ADMIN_MFA_REQUIRED', 'ADMIN_EMAIL_VERIFICATION_REQUIRED', 'ADMIN_ACCESS_REQUIRED', 'ADMIN_ONLY'].includes(e.code))
     ) signOut();
     setError(errorText(e));
   }, [signOut]);
@@ -154,15 +167,28 @@ export default function AdminPortal() {
     let cancelled = false;
     setListing(true);
     setError('');
-    session.current.request<{ applications: ApplicationSummary[]; total: number }>('list', {
+    const params = {
       status: filter || undefined,
       search: query,
       page,
-      page_size: 20,
-    }).then((r) => {
+      page_size: pageSize,
+    };
+    const key = applicationListKey(params);
+    const snapshot = session.current.cachedApplications(params);
+    setRows(snapshot?.page.applications ?? []);
+    setTotal(snapshot?.page.total ?? 0);
+    setRowsKey(key);
+    setUpdatedAt(snapshot?.receivedAt ?? null);
+    const force = forceListRefresh.current;
+    forceListRefresh.current = false;
+    session.current.listApplications(params, force).then((r) => {
       if (!cancelled) {
+        // A concurrent reviewer may have removed the final row on this page.
+        const lastPage = Math.max(1, Math.ceil(r.total / pageSize));
+        if (page > lastPage) { setPage(lastPage); return; }
         setRows(r.applications);
         setTotal(r.total);
+        setUpdatedAt(Date.now());
       }
     }).catch((e) => {
       if (!cancelled) report(e);
@@ -172,7 +198,7 @@ export default function AdminPortal() {
     return () => {
       cancelled = true;
     };
-  }, [admin, selected, filter, query, page, refresh, report, section]);
+  }, [admin, selected, filter, query, page, pageSize, refresh, report, section]);
   useEffect(() => {
     if (!admin || !selected || !session.current || section !== 'applications') {
       setDetail(null);
@@ -201,7 +227,7 @@ export default function AdminPortal() {
     setRefresh((v) => v + 1);
   }
   return (
-    <div className='ops-portal'>
+    <div className={`ops-portal${admin ? ' ops-authenticated' : ''}`}>
       <header className='ops-header'>
         <Brand />
         <div className='ops-header-actions'>
@@ -246,11 +272,19 @@ export default function AdminPortal() {
         )
         : (
           <div className='ops-shell'>
+            <aside className='ops-sidebar' aria-label='Workspace navigation'>
+              <span className='ops-nav-label'>WORKSPACE</span>
+              <nav aria-label='Administration areas'>
+                <button disabled={financePending} aria-current={section === 'applications' ? 'page' : undefined} onClick={() => { setSection('applications'); setError(''); setNotice(''); }}><ClipboardList size={18} /> Applications</button>
+                {admin.role === 'admin' && <>
+                  <button disabled={financePending} aria-current={section === 'finance' ? 'page' : undefined} onClick={() => { setSection('finance'); setError(''); setNotice(''); }}><CreditCard size={18} /> Payments & resolutions</button>
+                  <button disabled={financePending} aria-current={section === 'privacy' ? 'page' : undefined} onClick={() => { setSection('privacy'); setError(''); setNotice(''); }}><ShieldCheck size={18} /> Account deletion</button>
+                  <button disabled={financePending} aria-current={section === 'support' ? 'page' : undefined} onClick={() => { setSection('support'); setError(''); setNotice(''); }}><Mail size={18} /> General support</button>
+                </>}
+              </nav>
+              <div className='ops-sidebar-foot'><span>Kaylo operations</span><small>All times in India Standard Time</small></div>
+            </aside>
             <main id='main' tabIndex={-1} className='ops-main'>
-              {admin.role === 'admin' && <nav className='ops-workspaces' aria-label='Administration areas'>
-                <button disabled={financePending} aria-current={section === 'applications' ? 'page' : undefined} onClick={() => { setSection('applications'); setError(''); setNotice(''); }}>Applications</button>
-                <button disabled={financePending} aria-current={section === 'finance' ? 'page' : undefined} onClick={() => { setSection('finance'); setError(''); setNotice(''); }}>Payments & resolutions</button>
-              </nav>}
               {error && (
                 <div role='alert' className='ops-alert'>
                   {error}
@@ -270,11 +304,16 @@ export default function AdminPortal() {
               )}
               {section === 'finance' && admin.role === 'admin' && session.current
                 ? <FinancePanel session={session.current} onError={report} theme={theme} onPendingChange={setFinancePending}/>
+                : section === 'privacy' && admin.role === 'admin' && session.current
+                ? <PrivacyPanel session={session.current} onError={report} theme={theme} onPendingChange={setFinancePending}/>
+                : section === 'support' && admin.role === 'admin' && session.current
+                ? <SupportPanel session={session.current} onError={report} onPendingChange={setFinancePending}/>
                 : selected
                 ? (
                   <>
                     <button
                       className='ops-text-button'
+                      disabled={financePending}
                       onClick={() => {
                         setSelected(null);
                         setNotice('');
@@ -293,6 +332,7 @@ export default function AdminPortal() {
                           refresh={reloadDetail}
                           onError={report}
                           onNotice={setNotice}
+                          onPendingChange={setFinancePending}
                         />
                       )
                       : detailLoading
@@ -311,141 +351,24 @@ export default function AdminPortal() {
                 )
                 : (
                   <>
-                    <div className='ops-page-heading'>
-                      <div>
-                        <h1>Applications</h1>
-                      </div>
-                      <button
-                        className='ops-button'
-                        onClick={() => setRefresh((v) => v + 1)}
-                        disabled={listing}
-                      >
-                        <RefreshCw size={16} /> Refresh
-                      </button>
-                    </div>
-                    <div className='ops-toolbar'>
-                      <div className='ops-filters' aria-label='Filter applications'>
-                        {([
-                          'under_review',
-                          'submitted',
-                          'changes_requested',
-                          'approved',
-                          'rejected',
-                          '',
-                        ] as const).map((s) => (
-                          <button
-                            key={s}
-                            className={filter === s ? 'selected' : ''}
-                            aria-pressed={filter === s}
-                            onClick={() => {
-                              setFilter(s);
-                              setPage(1);
-                            }}
-                          >
-                            {s ? statuses[s] : 'All'}
-                          </button>
-                        ))}
-                      </div>
-                      <label className='ops-search'>
-                        <Search size={17} />
-                        <input
-                          aria-label='Search by name or reference'
-                          placeholder='Name or reference'
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                        />
-                      </label>
-                    </div>
-                    <div className='ops-list-meta'>
-                      <span>
-                        {listing
-                          ? 'Loading applications…'
-                          : `${total} application${total === 1 ? '' : 's'}`}
-                      </span>
-                      <span>Newest first · Times in IST</span>
-                    </div>
-                    <div className='ops-table-wrap' aria-busy={listing}>
-                      <table className='ops-table'>
-                        <thead>
-                          <tr>
-                            <th>Applicant</th>
-                            <th>Service & area</th>
-                            <th>Received</th>
-                            <th>Status</th>
-                            <th>
-                              <span className='ops-sr'>Open</span>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rows.map((a) => (
-                            <tr key={a.application_id}>
-                              <td>
-                                <button
-                                  className='ops-applicant'
-                                  onClick={() => setSelected(a.application_id)}
-                                >
-                                  <span className='ops-avatar'>{a.full_name.slice(0, 1)}</span>
-                                  <span>
-                                    <strong>{a.full_name}</strong>
-                                    <small>{a.reference}</small>
-                                  </span>
-                                </button>
-                              </td>
-                              <td>
-                                {a.profession}
-                                <small>{a.district}</small>
-                              </td>
-                              <td>{formatDate(a.submitted_at)}</td>
-                              <td>
-                                <Badge status={a.status} />
-                              </td>
-                              <td>
-                                <button
-                                  className='ops-icon'
-                                  aria-label={`Review ${a.full_name}`}
-                                  onClick={() => setSelected(a.application_id)}
-                                >
-                                  <ArrowUpRight size={19} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {!listing && rows.length === 0 && (
-                        <div className='ops-empty'>
-                          <Inbox size={34} />
-                          <h2>{query ? 'No matching applications' : 'No applications yet'}</h2>
-                          <p>
-                            {query
-                              ? 'Try another name or application reference.'
-                              : 'Applications will appear here when workers submit their registration.'}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    <div className='ops-pagination'>
-                      <span>Page {page} of {Math.max(1, Math.ceil(total / 20))}</span>
-                      <div>
-                        <button
-                          className='ops-icon'
-                          aria-label='Previous page'
-                          disabled={page <= 1 || listing}
-                          onClick={() => setPage((v) => v - 1)}
-                        >
-                          <ChevronLeft size={19} />
-                        </button>
-                        <button
-                          className='ops-icon'
-                          aria-label='Next page'
-                          disabled={page * 20 >= total || listing}
-                          onClick={() => setPage((v) => v + 1)}
-                        >
-                          <ChevronRight size={19} />
-                        </button>
-                      </div>
-                    </div>
+                    <ApplicationQueue
+                      filter={filter}
+                      search={search}
+                      query={query}
+                      page={page}
+                      pageSize={pageSize}
+                      rows={rowsKey === applicationListKey({ status: filter || undefined, search: query, page, page_size: pageSize }) ? rows : []}
+                      total={rowsKey === applicationListKey({ status: filter || undefined, search: query, page, page_size: pageSize }) ? total : 0}
+                      loading={listing || rowsKey !== applicationListKey({ status: filter || undefined, search: query, page, page_size: pageSize })}
+                      updatedAt={updatedAt}
+                      failed={!!error}
+                      onFilter={(value) => { setFilter(value); setPage(1); }}
+                      onSearch={setSearch}
+                      onPage={setPage}
+                      onPageSize={(value) => { setPageSize(value); setPage(1); }}
+                      onOpen={setSelected}
+                      onRefresh={() => { forceListRefresh.current = true; setRefresh((v) => v + 1); }}
+                    />
                   </>
                 )}
             </main>
@@ -469,6 +392,7 @@ function ApplicationReview({
   refresh,
   onError,
   onNotice,
+  onPendingChange,
 }: {
   detail: Detail;
   refreshing: boolean;
@@ -477,6 +401,7 @@ function ApplicationReview({
   refresh: () => Promise<void>;
   onError: (e: unknown) => void;
   onNotice: (s: string) => void;
+  onPendingChange: (pending: boolean) => void;
 }) {
   const { application: a, documents, audit, deliveries, certificate } = detail;
   const d = a.details;
@@ -493,6 +418,10 @@ function ApplicationReview({
   const waiting = busy || refreshing;
   const canReview = ['submitted', 'under_review', 'changes_requested'].includes(a.status);
   const allChecked = required.every((t) => checked.includes(t));
+  useEffect(() => {
+    onPendingChange(busy);
+    return () => onPendingChange(false);
+  }, [busy, onPendingChange]);
   useEffect(() => {
     if (decision) dialog.current?.showModal();
     else dialog.current?.close();
