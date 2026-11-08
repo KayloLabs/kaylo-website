@@ -4,7 +4,7 @@ import {mkdtemp,mkdir,writeFile,rm,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {verifyPagesExport,verifyPublicConfig} from './verify-pages.mjs';
-const routes=['index.html','admin/index.html','application/update/index.html','professionals/index.html','services/index.html','download/index.html'];
+const routes=['index.html','admin/index.html','application/update/index.html','professionals/index.html','services/index.html','download/index.html','privacy/index.html','account-deletion/index.html'];
 const html='<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer"><main id="main"></main><a href="/kaylo-website/services/">Services</a><img src="/kaylo-website/image.svg">';
 async function fixture(run){
  const root=await mkdtemp(path.join(tmpdir(),'kaylo-pages-test-'));
@@ -14,7 +14,10 @@ async function fixture(run){
   await run(root);
  }finally{await rm(root,{recursive:true,force:true});}
 }
-test('valid project-path export passes without remote requests',()=>fixture(async root=>assert.equal((await verifyPagesExport(root)).routes,6)));
+test('valid project-path export passes without remote requests',()=>fixture(async root=>assert.equal((await verifyPagesExport(root)).routes,8)));
+test('privacy and deletion routes must both exist in the published artifact',async()=>{
+ for(const route of ['privacy/index.html','account-deletion/index.html'])await fixture(async root=>{await rm(path.join(root,route));await assert.rejects(verifyPagesExport(root),/Missing Pages route/);});
+});
 test('missing marker and broken project-root asset fail',async()=>{
  await fixture(async root=>{await rm(path.join(root,'.nojekyll'));await assert.rejects(verifyPagesExport(root),/marker/);});
  await fixture(async root=>{await writeFile(path.join(root,'index.html'),html+'<img src="/image.svg">');await assert.rejects(verifyPagesExport(root),/project path/);});
