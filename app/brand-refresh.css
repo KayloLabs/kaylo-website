@@ -24,8 +24,8 @@ h1 em,h2 em{font-style:italic;font-weight:600}
 .final-cta .closing-button:hover{background:#e8cf96;border-color:#e8cf96;transform:translateY(-2px)}
 .final-cta .closing-button:active{transform:translateY(0)}
 .final-cta .closing-button svg path{stroke:currentColor;stroke-width:2}
-/* Two different edges, with a visible pale band between the green sections. */
-.final-cta .section-wave{position:absolute;inset:-1px 0 auto;width:100%;height:78px;opacity:1;pointer-events:none}
+/* Parallel curves leave a consistent pale band between the green sections. */
+.final-cta .section-wave{display:block;position:absolute;inset:-1px 0 auto;width:100%;height:78px;opacity:1;pointer-events:none}
 .final-cta .wave-space{fill:#e9e5ca;stroke:none}
 .final-cta .wave-upper{fill:var(--green);stroke:none}
 .services-page .final-cta .wave-upper{fill:var(--paper)}
