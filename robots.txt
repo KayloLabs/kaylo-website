@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /kaylo-website/
+Disallow: /kaylo-website/api/
+
+Sitemap: https://kaylo.in/sitemap.xml
