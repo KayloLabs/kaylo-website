@@ -1,6 +1,6 @@
 :HL["/kaylo-website/_next/static/media/2f877a252b76ecef-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
 :HL["/kaylo-website/_next/static/media/b60b21974a62beff-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
 :HL["/kaylo-website/_next/static/media/dd867eac9d8707d9-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
-:HL["/kaylo-website/_next/static/css/852a42d8dab898fe.css","style"]
+:HL["/kaylo-website/_next/static/css/323a0304f7bb331e.css","style"]
 :HL["/kaylo-website/_next/static/css/c505d77d7a3303ac.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"account-deletion","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"9DavZmJFOrrNL-pfctkNV"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"account-deletion","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"rpNz4-c-lh7BmyUJw8wMG"}
