@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 
 const requiredRoutes=['index.html','admin/index.html','application/update/index.html','professionals/index.html','services/index.html','download/index.html','privacy/index.html','account-deletion/index.html','terms/index.html','refund-policy/index.html','contact/index.html','pricing/index.html','about/index.html'];
 const privateRoutes=new Set(['admin/index.html','application/update/index.html']);
-const canonicalOrigin='https://kayloapp.in';
+const canonicalOrigin='https://kaylo.in';
 const forbiddenParts=new Set(['.git','.next','node_modules','server','supabase','lib','components','.openai','.sites-runtime']);
 const textExtensions=new Set(['.html','.css','.js','.json','.txt','.svg']);
 

@@ -92,7 +92,7 @@ Additional checks: `node --test scripts/verify-pages.test.mjs` and
 
 ## Custom-domain export
 
-The same static frontend supports `https://kayloapp.in/`: build with
+The same static frontend supports `https://kaylo.in/`: build with
 `NEXT_PUBLIC_BASE_PATH='' npm run build:pages`. CI keeps the existing
 `kaylo-pages-<commit>` artifact and also produces `kaylo-root-<commit>` for
 Sites/custom-domain hosting after the checks pass. Both artifacts contain the
@@ -102,7 +102,7 @@ application correction pages retain their no-index/no-referrer metadata.
 
 Deploy the root artifact as static assets. It does not require the legacy
 `/api/applications` Worker; preserve existing D1 records and bindings. When the
-domain is activated, set the backend `KAYLO_PORTAL_URL=https://kayloapp.in/` so
+domain is activated, set the backend `KAYLO_PORTAL_URL=https://kaylo.in/` so
 new email links use it. The APK backend must allow the GitHub, apex, www and
 Sites preview origins during migration; the updated function accepts an
 explicit `APK_ALLOWED_ORIGINS` comma-separated HTTPS allowlist and retains
