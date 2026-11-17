@@ -2,7 +2,7 @@ import {readFile,readdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const requiredRoutes=['index.html','admin/index.html','application/update/index.html','professionals/index.html','services/index.html','download/index.html','privacy/index.html','account-deletion/index.html'];
+const requiredRoutes=['index.html','admin/index.html','application/update/index.html','professionals/index.html','services/index.html','download/index.html','privacy/index.html','account-deletion/index.html','terms/index.html','refund-policy/index.html','contact/index.html','pricing/index.html','about/index.html'];
 const forbiddenParts=new Set(['.git','.next','node_modules','server','supabase','lib','components','.openai','.sites-runtime']);
 const textExtensions=new Set(['.html','.css','.js','.json','.txt','.svg']);
 
