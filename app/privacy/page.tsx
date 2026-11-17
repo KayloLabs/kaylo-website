@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { canonicalMetadata } from '@/lib/site-metadata';
 import { ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -6,6 +7,7 @@ import { sitePath } from '@/lib/site-path';
 import '../privacy-pages.css';
 
 export const metadata: Metadata = {
+  ...canonicalMetadata('/privacy/'),
   title: 'Privacy policy | Kaylo and Kaylo Partner',
   description: 'How Kaylo and Kaylo Partner use, share and retain your information, and how to request account deletion.',
 };

@@ -6,15 +6,24 @@ import path from 'node:path';
 import {verifyPagesExport,verifyPublicConfig} from './verify-pages.mjs';
 const routes=['index.html','admin/index.html','application/update/index.html','professionals/index.html','services/index.html','download/index.html','privacy/index.html','account-deletion/index.html','terms/index.html','refund-policy/index.html','contact/index.html','pricing/index.html','about/index.html'];
 const html='<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer"><main id="main"></main><a href="/kaylo-website/services/">Services</a><img src="/kaylo-website/image.svg">';
-async function fixture(run){
+async function fixture(run,basePath='/kaylo-website'){
  const root=await mkdtemp(path.join(tmpdir(),'kaylo-pages-test-'));
  try{
-  for(const route of routes){await mkdir(path.dirname(path.join(root,route)),{recursive:true});await writeFile(path.join(root,route),html);}
+  for(const route of routes){await mkdir(path.dirname(path.join(root,route)),{recursive:true});await writeFile(path.join(root,route),html.replaceAll('/kaylo-website',basePath)+`<link rel="canonical" href="https://kayloapp.in/${route.replace(/index\.html$/,'')}">`);}
   await writeFile(path.join(root,'.nojekyll'),'');await writeFile(path.join(root,'image.svg'),'<svg/>');
+  const publicRoutes=routes.filter(route=>!['admin/index.html','application/update/index.html'].includes(route));
+  await writeFile(path.join(root,'sitemap.xml'),`<urlset>${publicRoutes.map(route=>`<url><loc>https://kayloapp.in/${route.replace(/index\.html$/,'')}</loc></url>`).join('')}</urlset>`);
+  await writeFile(path.join(root,'robots.txt'),`User-Agent: *\nAllow: ${basePath}/\nDisallow: ${basePath}/admin/\nDisallow: ${basePath}/application/update/\nSitemap: https://kayloapp.in/sitemap.xml\n`);
   await run(root);
  }finally{await rm(root,{recursive:true,force:true});}
 }
 test('valid project-path export passes without remote requests',()=>fixture(async root=>assert.equal((await verifyPagesExport(root)).routes,13)));
+test('root-domain export verifies root-relative assets and private robots paths',()=>fixture(async root=>assert.equal((await verifyPagesExport(root,{basePath:''})).routes,13),''));
+test('old-host canonicals, private sitemap URLs and missing robots directives fail',async()=>{
+ await fixture(async root=>{await writeFile(path.join(root,'index.html'),html+'<link rel="canonical" href="https://kaylolabs.github.io/kaylo-website/">');await assert.rejects(verifyPagesExport(root),/canonical URL/);});
+ await fixture(async root=>{await writeFile(path.join(root,'sitemap.xml'),'<urlset><url><loc>https://kayloapp.in/admin/</loc></url></urlset>');await assert.rejects(verifyPagesExport(root),/public canonical/);});
+ await fixture(async root=>{await writeFile(path.join(root,'robots.txt'),'User-Agent: *\nAllow: /\n');await assert.rejects(verifyPagesExport(root),/robots directive/);});
+});
 test('privacy and deletion routes must both exist in the published artifact',async()=>{
  for(const route of ['privacy/index.html','account-deletion/index.html'])await fixture(async root=>{await rm(path.join(root,route));await assert.rejects(verifyPagesExport(root),/Missing Pages route/);});
 });

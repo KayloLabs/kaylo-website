@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { canonicalMetadata } from '@/lib/site-metadata';
 import { InformationPage } from '@/components/InformationPage';
 import { sitePath } from '@/lib/site-path';
 
 export const metadata: Metadata = {
+  ...canonicalMetadata('/about/'),
   title: 'About Kaylo | Home, Farm and Care',
   description: 'Kaylo is a Kerala-rooted local services platform connecting customers with professionals for home, farm and care needs.',
 };

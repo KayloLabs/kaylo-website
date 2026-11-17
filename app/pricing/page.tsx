@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { canonicalMetadata } from '@/lib/site-metadata';
 import { InformationPage } from '@/components/InformationPage';
 import { sitePath } from '@/lib/site-path';
 
 export const metadata: Metadata = {
+  ...canonicalMetadata('/pricing/'),
   title: 'Pricing and payment information | Kaylo',
   description: 'How Kaylo shows service prices, booking totals, offers and payment options before you request a professional.',
 };

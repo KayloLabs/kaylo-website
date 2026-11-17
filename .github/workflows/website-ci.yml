@@ -38,3 +38,28 @@ jobs:
           path: out/
           include-hidden-files: true
           retention-days: 7
+
+  root_export:
+    # The custom domain and Sites preview serve the same site at the URL root.
+    # Keep its artifact separate from main's /kaylo-website Pages export.
+    needs: verify
+    if: github.ref == 'refs/heads/source'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_BASE_PATH: ''
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:pages
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kaylo-root-${{ github.sha }}
+          path: out/
+          include-hidden-files: true
+          retention-days: 7

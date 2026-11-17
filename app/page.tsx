@@ -1,4 +1,5 @@
 import { SiteExperience } from '@/components/SiteExperience';
+import { canonicalMetadata } from '@/lib/site-metadata';
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
 import { BrandStatement } from '@/components/Motion';
@@ -9,4 +10,5 @@ import { AppPreview } from '@/components/AppPreview';
 import { Professionals } from '@/components/Professionals';
 import { FinalCTA } from '@/components/FinalCTA';
 import { Footer } from '@/components/Footer';
+export const metadata = canonicalMetadata('/');
 export default function Page(){return <SiteExperience><Navbar/><main id="main" tabIndex={-1}><Hero/><BrandStatement/><HowItWorks/><Services/><TrustSection/><LocalSection/><AppPreview/><Professionals/><FinalCTA/></main><Footer/></SiteExperience>}

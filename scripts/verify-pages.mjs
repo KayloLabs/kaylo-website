@@ -3,6 +3,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const requiredRoutes=['index.html','admin/index.html','application/update/index.html','professionals/index.html','services/index.html','download/index.html','privacy/index.html','account-deletion/index.html','terms/index.html','refund-policy/index.html','contact/index.html','pricing/index.html','about/index.html'];
+const privateRoutes=new Set(['admin/index.html','application/update/index.html']);
+const canonicalOrigin='https://kayloapp.in';
 const forbiddenParts=new Set(['.git','.next','node_modules','server','supabase','lib','components','.openai','.sites-runtime']);
 const textExtensions=new Set(['.html','.css','.js','.json','.txt','.svg']);
 
@@ -31,7 +33,7 @@ export async function verifyPagesExport(directory,{basePath='/kaylo-website',req
  }
  await walk();
  const known=new Set(files);
- for(const file of [...requiredRoutes,...(requireNoJekyll?['.nojekyll']:[])]){
+ for(const file of [...requiredRoutes,'robots.txt','sitemap.xml',...(requireNoJekyll?['.nojekyll']:[])]){
   if(!known.has(file))throw new Error(`Missing Pages route or marker: ${file}`);
  }
  const cache=new Map();
@@ -63,10 +65,22 @@ export async function verifyPagesExport(directory,{basePath='/kaylo-website',req
  for(const file of requiredRoutes){
   const source=await text(file);
   if(!/<main\b[^>]*\bid="main"/.test(source))throw new Error(`Missing accessible main landmark: ${file}`);
+  if(!privateRoutes.has(file)){
+   const links=[...source.matchAll(/<link\b[^>]*>/g)].map(match=>match[0]).filter(tag=>/\brel="canonical"/.test(tag));
+   const expected=`${canonicalOrigin}/${file.replace(/index\.html$/,'')}`;
+   if(links.length!==1||links[0].match(/\bhref="([^"]+)"/)?.[1]!==expected)throw new Error(`Incorrect canonical URL: ${file}`);
+  }
  }
- for(const file of ['admin/index.html','application/update/index.html']){
+ for(const file of privateRoutes){
   const source=await text(file);
   if(!/<meta\s+name="robots"\s+content="[^"]*noindex/.test(source)||!/<meta\s+name="referrer"\s+content="no-referrer"/.test(source))throw new Error(`Missing private-page metadata: ${file}`);
+ }
+ const sitemapUrls=[...(await text('sitemap.xml')).matchAll(/<loc>([^<]+)<\/loc>/g)].map(match=>match[1]).sort();
+ const expectedUrls=requiredRoutes.filter(file=>!privateRoutes.has(file)).map(file=>`${canonicalOrigin}/${file.replace(/index\.html$/,'')}`).sort();
+ if(JSON.stringify(sitemapUrls)!==JSON.stringify(expectedUrls))throw new Error('Sitemap must contain exactly the public canonical URLs.');
+ const robots=await text('robots.txt');
+ for(const directive of [`Sitemap: ${canonicalOrigin}/sitemap.xml`,`Disallow: ${basePath}/admin/`,`Disallow: ${basePath}/application/update/`]){
+  if(!robots.split(/\r?\n/).some(line=>line.trim()===directive))throw new Error('Missing sitemap or private-route robots directive.');
  }
  return {files:files.length,routes:requiredRoutes.length};
 }

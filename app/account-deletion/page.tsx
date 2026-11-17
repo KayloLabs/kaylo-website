@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { canonicalMetadata } from '@/lib/site-metadata';
 import { UserRoundMinus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -7,6 +8,7 @@ import { sitePath } from '@/lib/site-path';
 import '../privacy-pages.css';
 
 export const metadata: Metadata = {
+  ...canonicalMetadata('/account-deletion/'),
   title: 'Request account deletion | Kaylo and Kaylo Partner',
   description: 'Request deletion of your Kaylo or Kaylo Partner account and associated data without reinstalling the app.',
   referrer: 'no-referrer',

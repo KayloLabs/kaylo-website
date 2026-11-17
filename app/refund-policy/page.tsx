@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { canonicalMetadata } from '@/lib/site-metadata';
 import { InformationPage } from '@/components/InformationPage';
 import { sitePath } from '@/lib/site-path';
 
 export const metadata: Metadata = {
+  ...canonicalMetadata('/refund-policy/'),
   title: 'Cancellation and refund policy | Kaylo',
   description: 'When Kaylo bookings can be cancelled, how online refunds are processed, and how to get help with cash payments or service disputes.',
 };

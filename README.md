@@ -90,6 +90,26 @@ An older backend without audited payout reveal keeps payout data hidden.
 Additional checks: `node --test scripts/verify-pages.test.mjs` and
 `NEXT_PUBLIC_BASE_PATH=/kaylo-website node scripts/verify-pages.mjs out`.
 
+## Custom-domain export
+
+The same static frontend supports `https://kayloapp.in/`: build with
+`NEXT_PUBLIC_BASE_PATH='' npm run build:pages`. CI keeps the existing
+`kaylo-pages-<commit>` artifact and also produces `kaylo-root-<commit>` for
+Sites/custom-domain hosting after the checks pass. Both artifacts contain the
+same content and root-domain canonical URLs; internal links and assets use their
+respective base paths. The sitemap contains public pages only, and admin and
+application correction pages retain their no-index/no-referrer metadata.
+
+Deploy the root artifact as static assets. It does not require the legacy
+`/api/applications` Worker; preserve existing D1 records and bindings. When the
+domain is activated, set the backend `KAYLO_PORTAL_URL=https://kayloapp.in/` so
+new email links use it. The APK backend must allow the GitHub, apex, www and
+Sites preview origins during migration; the updated function accepts an
+explicit `APK_ALLOWED_ORIGINS` comma-separated HTTPS allowlist and retains
+`APK_ALLOWED_ORIGIN` for compatibility. These CORS settings do not replace the
+download password or token checks. A successful export alone does not establish
+domain DNS, HTTPS, Firebase key restrictions or live backend configuration.
+
 ### Admin authenticator support
 
 The portal supports a Firebase Identity Platform TOTP challenge and enrollment flow. Enforcement is opt-in through the private Supabase function variable `KAYLO_ADMIN_REQUIRE_MFA=true`; this is not a browser setting. Password-only sessions can receive limited enrollment eligibility but cannot access applications when enforcement is enabled. Setup secrets remain in memory, and uncertain enrollment writes are read back rather than repeated. See [the rollout and recovery runbook](docs/admin-mfa-rollout.md) for project prerequisites, activation order and live checks. Source implementation does not imply MFA has been enabled in the live project.
