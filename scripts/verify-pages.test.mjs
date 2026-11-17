@@ -13,7 +13,7 @@ async function fixture(run,basePath='/kaylo-website'){
   await writeFile(path.join(root,'.nojekyll'),'');await writeFile(path.join(root,'image.svg'),'<svg/>');
   const publicRoutes=routes.filter(route=>!['admin/index.html','application/update/index.html'].includes(route));
   await writeFile(path.join(root,'sitemap.xml'),`<urlset>${publicRoutes.map(route=>`<url><loc>https://kaylo.in/${route.replace(/index\.html$/,'')}</loc></url>`).join('')}</urlset>`);
-  await writeFile(path.join(root,'robots.txt'),`User-Agent: *\nAllow: ${basePath}/\nDisallow: ${basePath}/admin/\nDisallow: ${basePath}/application/update/\nSitemap: https://kaylo.in/sitemap.xml\n`);
+  await writeFile(path.join(root,'robots.txt'),`User-Agent: *\nAllow: ${basePath}/\nDisallow: ${basePath}/api/\nSitemap: https://kaylo.in/sitemap.xml\n`);
   await run(root);
  }finally{await rm(root,{recursive:true,force:true});}
 }

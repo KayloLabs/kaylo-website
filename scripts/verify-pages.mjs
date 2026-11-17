@@ -79,9 +79,10 @@ export async function verifyPagesExport(directory,{basePath='/kaylo-website',req
  const expectedUrls=requiredRoutes.filter(file=>!privateRoutes.has(file)).map(file=>`${canonicalOrigin}/${file.replace(/index\.html$/,'')}`).sort();
  if(JSON.stringify(sitemapUrls)!==JSON.stringify(expectedUrls))throw new Error('Sitemap must contain exactly the public canonical URLs.');
  const robots=await text('robots.txt');
- for(const directive of [`Sitemap: ${canonicalOrigin}/sitemap.xml`,`Disallow: ${basePath}/admin/`,`Disallow: ${basePath}/application/update/`]){
+ for(const directive of [`Sitemap: ${canonicalOrigin}/sitemap.xml`,`Disallow: ${basePath}/api/`]){
   if(!robots.split(/\r?\n/).some(line=>line.trim()===directive))throw new Error('Missing sitemap or private-route robots directive.');
  }
+ if(/Disallow:\s*[^\n]*(?:admin|application\/update)/.test(robots))throw new Error('Private-page noindex must be crawlable.');
  return {files:files.length,routes:requiredRoutes.length};
 }
 

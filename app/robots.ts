@@ -9,7 +9,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: sitePath('/'),
-      disallow: [sitePath('/admin/'), sitePath('/application/update/')],
+      // Let crawlers read the private pages’ noindex metadata. Authentication
+      // protects data; robots.txt is not an access-control mechanism.
+      disallow: [sitePath('/api/')],
     },
     sitemap: `${canonicalSiteOrigin}/sitemap.xml`,
   };

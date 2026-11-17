@@ -6,11 +6,7 @@ import { Footer } from '@/components/Footer';
 import { sitePath } from '@/lib/site-path';
 import '../privacy-pages.css';
 
-export const metadata: Metadata = {
-  ...canonicalMetadata('/privacy/'),
-  title: 'Privacy policy | Kaylo and Kaylo Partner',
-  description: 'How Kaylo and Kaylo Partner use, share and retain your information, and how to request account deletion.',
-};
+export const metadata: Metadata = canonicalMetadata('/privacy/');
 
 const contents = [
   ['information', 'Information we use'], ['permissions', 'Device permissions'],

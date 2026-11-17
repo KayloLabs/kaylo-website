@@ -3,11 +3,7 @@ import { canonicalMetadata } from '@/lib/site-metadata';
 import { InformationPage } from '@/components/InformationPage';
 import { sitePath } from '@/lib/site-path';
 
-export const metadata: Metadata = {
-  ...canonicalMetadata('/contact/'),
-  title: 'Contact and support | Kaylo',
-  description: 'Contact Kaylo about a booking, payment, professional application, account or privacy request.',
-};
+export const metadata: Metadata = canonicalMetadata('/contact/');
 const contents = [
   ['email', 'Contact Kaylo'], ['bookings', 'Booking and payment help'],
   ['professionals', 'Professional applications'], ['account', 'Accounts and privacy'], ['urgent', 'Urgent situations'],

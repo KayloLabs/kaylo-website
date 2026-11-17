@@ -149,3 +149,7 @@
  .hero-playful .moment:hover,.hero-playful .moment:focus-visible{transform:none}
 }
 @media(forced-colors:active){.brand-expressive h2 em path{stroke:CanvasText}.showcase-area{border:1px solid CanvasText}.showcase-ribbon{border-top:1px solid CanvasText}.showcase-motion-toggle{border:1px solid ButtonText}}
+
+/* Keep every service tab in the initial HTML without showing inactive panels. */
+.services [role="tabpanel"][hidden]{display:none}
+.service-summary{max-width:48rem;color:var(--muted);font-size:15px;line-height:1.7;margin:0 0 10px}

@@ -7,12 +7,7 @@ import { AccountDeletionForm } from '@/components/AccountDeletionForm';
 import { sitePath } from '@/lib/site-path';
 import '../privacy-pages.css';
 
-export const metadata: Metadata = {
-  ...canonicalMetadata('/account-deletion/'),
-  title: 'Request account deletion | Kaylo and Kaylo Partner',
-  description: 'Request deletion of your Kaylo or Kaylo Partner account and associated data without reinstalling the app.',
-  referrer: 'no-referrer',
-};
+export const metadata: Metadata = { ...canonicalMetadata('/account-deletion/'), referrer: 'no-referrer' };
 
 export default function AccountDeletionPage() {
   return <><Navbar/><main id="main" tabIndex={-1} className="deletion-page wrap">

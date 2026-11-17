@@ -3,11 +3,7 @@ import { canonicalMetadata } from '@/lib/site-metadata';
 import { InformationPage } from '@/components/InformationPage';
 import { sitePath } from '@/lib/site-path';
 
-export const metadata: Metadata = {
-  ...canonicalMetadata('/terms/'),
-  title: 'Terms of service | Kaylo',
-  description: 'Terms for using Kaylo and Kaylo Partner, including booking acceptance, payments, cancellations, professional responsibilities and support.',
-};
+export const metadata: Metadata = canonicalMetadata('/terms/');
 
 const contents = [
   ['using-kaylo', 'Using Kaylo'], ['booking', 'Making a booking'],
