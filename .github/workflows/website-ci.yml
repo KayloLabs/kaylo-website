@@ -30,7 +30,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: node --experimental-strip-types --test lib/*.test.ts
-      - run: node --test server/worker.test.mjs scripts/verify-pages.test.mjs
+      - run: node --test server/worker.test.mjs scripts/verify-pages.test.mjs scripts/build-worker.test.mjs
       - run: npm run build:pages
       - uses: actions/upload-artifact@v4
         with:
