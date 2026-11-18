@@ -4,24 +4,23 @@
 4:"static/chunks/681-eec616cde128dfa1.js"
 5:"static/chunks/525-3905aab8d3477fae.js"
 6:"static/chunks/881-11edbcd082ae8051.js"
-7:"static/chunks/491-ef47181a4ec8c934.js"
-8:"static/chunks/40-de40afb738b2057b.js"
-9:"static/chunks/875-a3fa763274a3239b.js"
-a:"static/chunks/app/page-eaf83bcc6c290d63.js"
-b:I[1265,["681","$4","525","$5","881","$6","491","$7","40","$8","875","$9","974","$a"],"default"]
-c:"static/chunks/app/not-found-ecff0c0d1423837c.js"
-d:I[6874,["681","$4","345","$c"],"Wordmark"]
-14:"static/chunks/app/download/page-792b3dd1074dc0f9.js"
-15:I[5727,["681","$4","40","$8","351","$14"],"Navbar"]
-16:I[1720,["681","$4","40","$8","351","$14"],"ApkDownloads"]
-17:I[5384,["681","$4","40","$8","351","$14"],"Footer"]
-18:I[484,[],"OutletBoundary"]
-19:"$Sreact.suspense"
-1c:"ViewportBoundary"
-1d:I[484,[],"$1c"]
-1e:"MetadataBoundary"
-1f:I[484,[],"$1e"]
-:HL["/kaylo-website/_next/static/css/b2eb13dcea10ab5e.css","style"]
+7:"static/chunks/40-de40afb738b2057b.js"
+8:"static/chunks/875-a3fa763274a3239b.js"
+9:"static/chunks/app/page-005567ea31d3b70c.js"
+a:I[1265,["681","$4","525","$5","881","$6","40","$7","875","$8","974","$9"],"default"]
+b:"static/chunks/app/not-found-ecff0c0d1423837c.js"
+c:I[6874,["681","$4","345","$b"],"Wordmark"]
+13:"static/chunks/app/download/page-792b3dd1074dc0f9.js"
+14:I[5727,["681","$4","40","$7","351","$13"],"Navbar"]
+15:I[1720,["681","$4","40","$7","351","$13"],"ApkDownloads"]
+16:I[5384,["681","$4","40","$7","351","$13"],"Footer"]
+17:I[484,[],"OutletBoundary"]
+18:"$Sreact.suspense"
+1b:"ViewportBoundary"
+1c:I[484,[],"$1b"]
+1d:"MetadataBoundary"
+1e:I[484,[],"$1d"]
+:HL["/kaylo-website/_next/static/css/69c7a6d338d2e7fa.css","style"]
 :HL["/kaylo-website/app-art/mode_home.png","image"]
 :HL["/kaylo-website/app-art/icon_electric.png","image"]
 :HL["/kaylo-website/app-art/icon_plumb.png","image"]
@@ -32,30 +31,30 @@ d:I[6874,["681","$4","345","$c"],"Wordmark"]
 :HL["/kaylo-website/app-art/mode_care.png","image"]
 :HL["/kaylo-website/_next/static/css/fd7cd336a7f23ebc.css","style"]
 :HL["/kaylo-website/_next/static/css/4acb02c0becc0737.css","style"]
-f:X
-12:X
-12:C
-13:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$1","c",{"children":[[["$","script",null,{"type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"{\"@context\":\"https://schema.org\",\"@type\":\"BreadcrumbList\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Kaylo\",\"item\":\"https://kaylo.in/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Download\",\"item\":\"https://kaylo.in/download/\"}]}"}}],["$","$L15",null,{}],["$","main",null,{"id":"main","tabIndex":-1,"className":"download-page wrap","children":[["$","div",null,{"className":"page-breadcrumb","children":[["$","a",null,{"href":"/kaylo-website/","children":"Kaylo"}],["$","span",null,{"children":"/"}],["$","span",null,{"children":"Download"}]]}],["$","header",null,{"className":"download-heading","children":[["$","h1",null,{"children":["Kaylo, ",["$","em",null,{"children":"on your phone."}]]}],["$","p",null,{"children":["Two apps. One connected community.",["$","br",null,{}],"Enter your download password to get started."]}]]}],["$","$L16",null,{}]]}],["$","$L17",null,{}]],[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/4acb02c0becc0737.css","precedence":"next"}]],["$","$L18",null,{"children":["$","$19",null,{"name":"Next.MetadataOutlet","children":"$@1a"}]}]]}],"p":"$@1b","v":null,"s":"$f"}}]]
-10:[["children",{"s":"download","h":96,"d":{"r":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"p":"$@11","v":"$12","s":"$f"},"c":"$Q13"}]]
-0:{"t":{"t":{"s":"","h":80,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/b2eb13dcea10ab5e.css","precedence":"next"}]],["$","html",null,{"lang":"en","className":"__variable_1e15f0 __variable_2989a2","children":["$","body",null,{"children":[["$","a",null,{"className":"skip-link","href":"#main","children":"Skip to content"}],["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}],"notFound":[["$","main",null,{"id":"main","tabIndex":-1,"className":"nf-page","children":[["$","div",null,{"className":"nf-stage","aria-hidden":"true","children":[["$","svg",null,{"className":"nf-route","viewBox":"0 0 520 440","fill":"none","children":["$","path",null,{"d":"M58 92c64-46 150-38 196 6 38 37 18 90 70 112 58 25 122-34 150 22 24 48-30 96-92 112-74 19-118-40-184-14-58 23-80 84-138 56-46-22-40-88 4-118"}]}],["$","div",null,{"className":"nf-number","children":[["$","span",null,{"children":"4"}],["$","span",null,{"className":"nf-zero","children":["$","img",null,{"src":"/kaylo-website/app-art/mode_home.png","alt":""}]}],["$","span",null,{"children":"4"}]]}],[["$","img","icon_electric",{"className":"nf-crew nf-crew-1","src":"/kaylo-website/app-art/icon_electric.png","alt":""}],["$","img","icon_plumb",{"className":"nf-crew nf-crew-2","src":"/kaylo-website/app-art/icon_plumb.png","alt":""}],["$","img","icon_carpentry",{"className":"nf-crew nf-crew-3","src":"/kaylo-website/app-art/icon_carpentry.png","alt":""}],["$","img","icon_garden",{"className":"nf-crew nf-crew-4","src":"/kaylo-website/app-art/icon_garden.png","alt":""}],["$","img","icon_coconut",{"className":"nf-crew nf-crew-5","src":"/kaylo-website/app-art/icon_coconut.png","alt":""}],["$","img","mode_farm",{"className":"nf-crew nf-crew-6","src":"/kaylo-website/app-art/mode_farm.png","alt":""}],["$","img","mode_care",{"className":"nf-crew nf-crew-7","src":"/kaylo-website/app-art/mode_care.png","alt":""}]]]}],["$","h1",null,{"children":"This page is out on a job."}],["$","footer",null,{"className":"nf-foot","children":[["$","a",null,{"className":"nf-back","href":"/kaylo-website/","children":[["$","$Lb",null,{"iconNode":[["path",{"d":"m12 19-7-7 7-7","key":"1l729n"}],["path",{"d":"M19 12H5","key":"x3x0zl"}]],"className":"lucide-arrow-left","size":14,"aria-hidden":"true"}],"Back to home"]}],["$","a",null,{"className":"nf-wordmark","href":"/kaylo-website/","aria-label":"Kaylo home","children":["$","$Ld",null,{}]}]]}]]}],[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/fd7cd336a7f23ebc.css","precedence":"next"}]]]}]]}]}]]}],"p":"$@e","v":null,"s":"$f"},"c":"$Q10"},"h":{"r":["$","$1","h",{"children":[null,["$","$L1d",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#f8f7f1"}]]}],["$","$L1f",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$19",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Download Kaylo & Kaylo Partner | Kaylo"}],["$","meta","1",{"name":"description","content":"Download the Kaylo customer and partner Android apps with your download password."}],["$","meta","2",{"name":"application-name","content":"Kaylo"}],["$","meta","3",{"name":"robots","content":"index, follow"}],["$","meta","4",{"name":"googlebot","content":"index, follow, max-image-preview:large"}],["$","link","5",{"rel":"canonical","href":"https://kaylo.in/download/"}],["$","meta","6",{"property":"og:title","content":"Download Kaylo & Kaylo Partner | Kaylo"}],["$","meta","7",{"property":"og:description","content":"Download the Kaylo customer and partner Android apps with your download password."}],["$","meta","8",{"property":"og:url","content":"https://kaylo.in/download/"}],["$","meta","9",{"property":"og:site_name","content":"Kaylo"}],["$","meta","10",{"property":"og:locale","content":"en_IN"}],["$","meta","11",{"property":"og:image","content":"https://kaylo.in/images/kaylo-social.png"}],["$","meta","12",{"property":"og:image:type","content":"image/png"}],["$","meta","13",{"property":"og:image:width","content":"1200"}],["$","meta","14",{"property":"og:image:height","content":"630"}],["$","meta","15",{"property":"og:image:alt","content":"Kaylo. Skilled people. Right when you need them. Home, Farm and Care."}],["$","meta","16",{"property":"og:type","content":"website"}],["$","meta","17",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","18",{"name":"twitter:title","content":"Download Kaylo & Kaylo Partner | Kaylo"}],"$L20","$L21","$L22","$L23","$L24","$L25","$L26","$L27","$L28","$L29"]}]}],null]}],"$L2a"]}],"p":"$@2b","v":null,"s":"$f"}},"a":"$@2c","u":"$@2d","b":"AuI-zhOORDNrbyFLbqdau"}
-2e:I[6869,[],"IconMark"]
-1a:null
-20:["$","meta","19",{"name":"twitter:description","content":"Download the Kaylo customer and partner Android apps with your download password."}]
-21:["$","meta","20",{"name":"twitter:image","content":"https://kaylo.in/images/kaylo-social.png"}]
-22:["$","meta","21",{"name":"twitter:image:alt","content":"Kaylo. Skilled people. Right when you need them. Home, Farm and Care."}]
-23:["$","link","22",{"rel":"shortcut icon","href":"/kaylo-website/icons/kaylo-mark-v2.ico"}]
-24:["$","link","23",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2.ico","type":"image/x-icon","sizes":"16x16 32x32 48x48"}]
-25:["$","link","24",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2-192.png","type":"image/png","sizes":"192x192"}]
-26:["$","link","25",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2-96.png","type":"image/png","sizes":"96x96"}]
-27:["$","link","26",{"rel":"apple-touch-icon","href":"/kaylo-website/icons/kaylo-apple-touch-v2.png","type":"image/png","sizes":"180x180"}]
-28:["$","link","27",{"rel":"mask-icon","href":"/kaylo-website/icons/kaylo-mask-v2.svg","color":"#264d36"}]
-29:["$","$L2e","28",{}]
-2a:["$","meta",null,{"name":"next-size-adjust","content":""}]
-f:300
-2d:true
-f:C
-2c:0
-11:"$undefined"
-e:"$undefined"
-2b:"$undefined"
-1b:"$undefined"
+e:X
+11:X
+11:C
+12:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$1","c",{"children":[[["$","script",null,{"type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"{\"@context\":\"https://schema.org\",\"@type\":\"BreadcrumbList\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Kaylo\",\"item\":\"https://kaylo.in/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Download\",\"item\":\"https://kaylo.in/download/\"}]}"}}],["$","$L14",null,{}],["$","main",null,{"id":"main","tabIndex":-1,"className":"download-page wrap","children":[["$","div",null,{"className":"page-breadcrumb","children":[["$","a",null,{"href":"/kaylo-website/","children":"Kaylo"}],["$","span",null,{"children":"/"}],["$","span",null,{"children":"Download"}]]}],["$","header",null,{"className":"download-heading","children":[["$","h1",null,{"children":["Kaylo, ",["$","em",null,{"children":"on your phone."}]]}],["$","p",null,{"children":["Two apps. One connected community.",["$","br",null,{}],"Enter your download password to get started."]}]]}],["$","$L15",null,{}]]}],["$","$L16",null,{}]],[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/4acb02c0becc0737.css","precedence":"next"}]],["$","$L17",null,{"children":["$","$18",null,{"name":"Next.MetadataOutlet","children":"$@19"}]}]]}],"p":"$@1a","v":null,"s":"$e"}}]]
+f:[["children",{"s":"download","h":96,"d":{"r":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"p":"$@10","v":"$11","s":"$e"},"c":"$Q12"}]]
+0:{"t":{"t":{"s":"","h":80,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/69c7a6d338d2e7fa.css","precedence":"next"}]],["$","html",null,{"lang":"en","className":"__variable_1e15f0 __variable_2989a2","children":["$","body",null,{"children":[["$","a",null,{"className":"skip-link","href":"#main","children":"Skip to content"}],["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}],"notFound":[["$","main",null,{"id":"main","tabIndex":-1,"className":"nf-page","children":[["$","div",null,{"className":"nf-stage","aria-hidden":"true","children":[["$","svg",null,{"className":"nf-route","viewBox":"0 0 520 440","fill":"none","children":["$","path",null,{"d":"M58 92c64-46 150-38 196 6 38 37 18 90 70 112 58 25 122-34 150 22 24 48-30 96-92 112-74 19-118-40-184-14-58 23-80 84-138 56-46-22-40-88 4-118"}]}],["$","div",null,{"className":"nf-number","children":[["$","span",null,{"children":"4"}],["$","span",null,{"className":"nf-zero","children":["$","img",null,{"src":"/kaylo-website/app-art/mode_home.png","alt":""}]}],["$","span",null,{"children":"4"}]]}],[["$","img","icon_electric",{"className":"nf-crew nf-crew-1","src":"/kaylo-website/app-art/icon_electric.png","alt":""}],["$","img","icon_plumb",{"className":"nf-crew nf-crew-2","src":"/kaylo-website/app-art/icon_plumb.png","alt":""}],["$","img","icon_carpentry",{"className":"nf-crew nf-crew-3","src":"/kaylo-website/app-art/icon_carpentry.png","alt":""}],["$","img","icon_garden",{"className":"nf-crew nf-crew-4","src":"/kaylo-website/app-art/icon_garden.png","alt":""}],["$","img","icon_coconut",{"className":"nf-crew nf-crew-5","src":"/kaylo-website/app-art/icon_coconut.png","alt":""}],["$","img","mode_farm",{"className":"nf-crew nf-crew-6","src":"/kaylo-website/app-art/mode_farm.png","alt":""}],["$","img","mode_care",{"className":"nf-crew nf-crew-7","src":"/kaylo-website/app-art/mode_care.png","alt":""}]]]}],["$","h1",null,{"children":"This page is out on a job."}],["$","footer",null,{"className":"nf-foot","children":[["$","a",null,{"className":"nf-back","href":"/kaylo-website/","children":[["$","$La",null,{"iconNode":[["path",{"d":"m12 19-7-7 7-7","key":"1l729n"}],["path",{"d":"M19 12H5","key":"x3x0zl"}]],"className":"lucide-arrow-left","size":14,"aria-hidden":"true"}],"Back to home"]}],["$","a",null,{"className":"nf-wordmark","href":"/kaylo-website/","aria-label":"Kaylo home","children":["$","$Lc",null,{}]}]]}]]}],[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/fd7cd336a7f23ebc.css","precedence":"next"}]]]}]]}]}]]}],"p":"$@d","v":null,"s":"$e"},"c":"$Qf"},"h":{"r":["$","$1","h",{"children":[null,["$","$L1c",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#f8f7f1"}]]}],["$","$L1e",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$18",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Download Kaylo & Kaylo Partner | Kaylo"}],["$","meta","1",{"name":"description","content":"Download the Kaylo customer and partner Android apps with your download password."}],["$","meta","2",{"name":"application-name","content":"Kaylo"}],["$","meta","3",{"name":"robots","content":"index, follow"}],["$","meta","4",{"name":"googlebot","content":"index, follow, max-image-preview:large"}],["$","link","5",{"rel":"canonical","href":"https://kaylo.in/download/"}],["$","meta","6",{"property":"og:title","content":"Download Kaylo & Kaylo Partner | Kaylo"}],["$","meta","7",{"property":"og:description","content":"Download the Kaylo customer and partner Android apps with your download password."}],["$","meta","8",{"property":"og:url","content":"https://kaylo.in/download/"}],["$","meta","9",{"property":"og:site_name","content":"Kaylo"}],["$","meta","10",{"property":"og:locale","content":"en_IN"}],["$","meta","11",{"property":"og:image","content":"https://kaylo.in/images/kaylo-social.png"}],["$","meta","12",{"property":"og:image:type","content":"image/png"}],["$","meta","13",{"property":"og:image:width","content":"1200"}],["$","meta","14",{"property":"og:image:height","content":"630"}],["$","meta","15",{"property":"og:image:alt","content":"Kaylo. Skilled people. Right when you need them. Home, Farm and Care."}],["$","meta","16",{"property":"og:type","content":"website"}],["$","meta","17",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","18",{"name":"twitter:title","content":"Download Kaylo & Kaylo Partner | Kaylo"}],"$L1f","$L20","$L21","$L22","$L23","$L24","$L25","$L26","$L27","$L28"]}]}],null]}],"$L29"]}],"p":"$@2a","v":null,"s":"$e"}},"a":"$@2b","u":"$@2c","b":"wYhmwhjjfcAWvYfdQ5ls3"}
+2d:I[6869,[],"IconMark"]
+19:null
+1f:["$","meta","19",{"name":"twitter:description","content":"Download the Kaylo customer and partner Android apps with your download password."}]
+20:["$","meta","20",{"name":"twitter:image","content":"https://kaylo.in/images/kaylo-social.png"}]
+21:["$","meta","21",{"name":"twitter:image:alt","content":"Kaylo. Skilled people. Right when you need them. Home, Farm and Care."}]
+22:["$","link","22",{"rel":"shortcut icon","href":"/kaylo-website/icons/kaylo-mark-v2.ico"}]
+23:["$","link","23",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2.ico","type":"image/x-icon","sizes":"16x16 32x32 48x48"}]
+24:["$","link","24",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2-192.png","type":"image/png","sizes":"192x192"}]
+25:["$","link","25",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2-96.png","type":"image/png","sizes":"96x96"}]
+26:["$","link","26",{"rel":"apple-touch-icon","href":"/kaylo-website/icons/kaylo-apple-touch-v2.png","type":"image/png","sizes":"180x180"}]
+27:["$","link","27",{"rel":"mask-icon","href":"/kaylo-website/icons/kaylo-mask-v2.svg","color":"#264d36"}]
+28:["$","$L2d","28",{}]
+29:["$","meta",null,{"name":"next-size-adjust","content":""}]
+e:300
+2c:true
+e:C
+2b:0
+10:"$undefined"
+d:"$undefined"
+2a:"$undefined"
+1a:"$undefined"

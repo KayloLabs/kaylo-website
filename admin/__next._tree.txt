@@ -1,11 +1,9 @@
 :HL["/kaylo-website/_next/static/media/2f877a252b76ecef-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
 :HL["/kaylo-website/_next/static/media/b60b21974a62beff-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
 :HL["/kaylo-website/_next/static/media/dd867eac9d8707d9-s.p.ttf","font",{"crossOrigin":"","type":"font/ttf"}]
-:HL["/kaylo-website/_next/static/css/b2eb13dcea10ab5e.css","style"]
+:HL["/kaylo-website/_next/static/css/69c7a6d338d2e7fa.css","style"]
 :HL["/kaylo-website/_next/static/css/65304430d7bd6bc1.css","style"]
-:HL["/kaylo-website/_next/static/css/2683514303a3ff89.css","style"]
-:HL["/kaylo-website/_next/static/css/e86b4c339f3279d5.css","style"]
-:HL["/kaylo-website/_next/static/css/b46a0acced1be039.css","style"]
+:HL["/kaylo-website/_next/static/css/496904cb30cbb90d.css","style"]
 :HL["/kaylo-website/app-art/mode_home.png","image"]
 :HL["/kaylo-website/app-art/icon_electric.png","image"]
 :HL["/kaylo-website/app-art/icon_plumb.png","image"]
@@ -17,4 +15,4 @@
 :HL["/kaylo-website/_next/static/css/fd7cd336a7f23ebc.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"admin","h":96,"c":"$Q2"}]]
-0:{"b":"AuI-zhOORDNrbyFLbqdau","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"wYhmwhjjfcAWvYfdQ5ls3","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
