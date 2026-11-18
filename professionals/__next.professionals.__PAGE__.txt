@@ -1,23 +1,31 @@
 1:"$Sreact.fragment"
-2:I[5727,["235","static/chunks/235-0579dc8a3aa31329.js","948","static/chunks/948-ba5d67de9f152cc7.js","40","static/chunks/40-8a07bd5f7859e473.js","146","static/chunks/146-054c23799d66ae54.js","644","static/chunks/644-f7e1c2fa68d3e694.js","337","static/chunks/app/professionals/page-08d728c1c2ee1c45.js"],"Navbar"]
-3:I[4444,["235","static/chunks/235-0579dc8a3aa31329.js","948","static/chunks/948-ba5d67de9f152cc7.js","40","static/chunks/40-8a07bd5f7859e473.js","146","static/chunks/146-054c23799d66ae54.js","644","static/chunks/644-f7e1c2fa68d3e694.js","337","static/chunks/app/professionals/page-08d728c1c2ee1c45.js"],"WorkerApplication"]
-4:I[5384,["235","static/chunks/235-0579dc8a3aa31329.js","948","static/chunks/948-ba5d67de9f152cc7.js","40","static/chunks/40-8a07bd5f7859e473.js","146","static/chunks/146-054c23799d66ae54.js","644","static/chunks/644-f7e1c2fa68d3e694.js","337","static/chunks/app/professionals/page-08d728c1c2ee1c45.js"],"Footer"]
-5:I[484,[],"OutletBoundary"]
-6:"$Sreact.suspense"
-a:I[484,[],"ViewportBoundary"]
-b:I[484,[],"MetadataBoundary"]
-:HL["/kaylo-website/images/craftsman.jpg","image"]
-:HL["/kaylo-website/_next/static/css/ab21642d2653e6f2.css","style"]
-9:X
-11:X
-11:C
-0:{"buildId":"QVwPFL7GtpRWtSmPVHE9p","data":[{"rsc":["$","$1","c",{"children":[[["$","$L2",null,{}],["$","main",null,{"id":"main","tabIndex":-1,"children":["$","section",null,{"className":"professional-page wrap","children":[["$","div",null,{"className":"professional-intro","children":[["$","a",null,{"className":"breadcrumb","href":"/kaylo-website/","children":"Kaylo / For professionals"}],["$","p",null,{"className":"eyebrow","children":"GOOD WORK DESERVES TO BE FOUND"}],["$","h1",null,{"children":["You bring",["$","br",null,{}],"the ",["$","em",null,{"children":"know-how."}]]}],["$","p",null,{"children":"We’re building a simpler way for skilled people to connect with the people who need them."}],["$","img",null,{"src":"/kaylo-website/images/craftsman.jpg","width":1448,"height":1086,"alt":"A skilled carpenter in his workshop"}],["$","ul",null,{"children":[["$","li",null,{"children":"Identity documents and the qualifications required for your chosen role"}],["$","li",null,{"children":"A UPI ID or bank account for payouts"}],["$","li",null,{"children":"An email address you can open, for your partner login"}]]}]]}],["$","$L3",null,{}]]}]}],["$","$L4",null,{}]],[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/ab21642d2653e6f2.css","precedence":"next"}]],["$","$L5",null,{"children":["$","$6",null,{"name":"Next.MetadataOutlet","children":"$@7"}]}]]}],"isPartial":"$@8","staleTime":"$9","varyParams":null},{"rsc":["$","$1","h",{"children":[null,["$","$La",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#f8f7f1"}]]}],["$","div",null,{"hidden":true,"children":["$","$Lb",null,{"children":["$","$6",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Join as a professional | Kaylo"}],["$","meta","1",{"name":"description","content":"Bring your skill to Kaylo. Apply to connect with local customers for home, farm and care services."}],["$","meta","2",{"name":"application-name","content":"Kaylo"}],["$","meta","3",{"name":"robots","content":"index, follow"}],["$","meta","4",{"name":"googlebot","content":"index, follow, max-image-preview:large"}],["$","link","5",{"rel":"canonical","href":"https://kaylo.in/professionals/"}],["$","meta","6",{"property":"og:title","content":"Join as a professional | Kaylo"}],["$","meta","7",{"property":"og:description","content":"Bring your skill to Kaylo. Apply to connect with local customers for home, farm and care services."}],["$","meta","8",{"property":"og:url","content":"https://kaylo.in/professionals/"}],["$","meta","9",{"property":"og:site_name","content":"Kaylo"}],["$","meta","10",{"property":"og:locale","content":"en_IN"}],["$","meta","11",{"property":"og:image","content":"https://kaylo.in/images/kaylo-social.png"}],["$","meta","12",{"property":"og:image:type","content":"image/png"}],["$","meta","13",{"property":"og:image:width","content":"1200"}],["$","meta","14",{"property":"og:image:height","content":"630"}],["$","meta","15",{"property":"og:image:alt","content":"Kaylo. Skilled people. Right when you need them. Home, Farm and Care."}],["$","meta","16",{"property":"og:type","content":"website"}],["$","meta","17",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","18",{"name":"twitter:title","content":"Join as a professional | Kaylo"}],["$","meta","19",{"name":"twitter:description","content":"Bring your skill to Kaylo. Apply to connect with local customers for home, farm and care services."}],["$","meta","20",{"name":"twitter:image","content":"https://kaylo.in/images/kaylo-social.png"}],["$","meta","21",{"name":"twitter:image:alt","content":"Kaylo. Skilled people. Right when you need them. Home, Farm and Care."}],["$","link","22",{"rel":"shortcut icon","href":"/kaylo-website/icons/kaylo-mark-v2.ico"}],["$","link","23",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2.ico","type":"image/x-icon","sizes":"16x16 32x32 48x48"}],["$","link","24",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2-192.png","type":"image/png","sizes":"192x192"}],["$","link","25",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2-96.png","type":"image/png","sizes":"96x96"}],["$","link","26",{"rel":"apple-touch-icon","href":"/kaylo-website/icons/kaylo-apple-touch-v2.png","type":"image/png","sizes":"180x180"}],["$","link","27",{"rel":"mask-icon","href":"/kaylo-website/icons/kaylo-mask-v2.svg","color":"#264d36"}],"$Lc"]}]}]}],"$Ld"]}],"isPartial":"$@e","staleTime":"$9","varyParams":null},{"rsc":"$Lf","isPartial":"$@10","staleTime":"$9","varyParams":"$11"},{"rsc":"$L12","isPartial":"$@13","staleTime":"$9","varyParams":null}],"isUpgradeableISRFallback":false,"a":"$@14","rootVaryParams":null,"needsRuntimeRequest":"$@15"}
-16:I[6869,[],"IconMark"]
-17:I[7121,[],""]
-18:I[4581,[],""]
-19:I[1265,["235","static/chunks/235-0579dc8a3aa31329.js","525","static/chunks/525-a9d79ac6d96660ed.js","206","static/chunks/206-3e73c019b9bb18bf.js","108","static/chunks/108-455b81450ba85f57.js","40","static/chunks/40-8a07bd5f7859e473.js","875","static/chunks/875-e087c21ddd704704.js","974","static/chunks/app/page-d83c2fe6974c243b.js"],"default"]
-1a:I[6874,["235","static/chunks/235-0579dc8a3aa31329.js","345","static/chunks/app/not-found-9177ee8f7940681c.js"],"Wordmark"]
-:HL["/kaylo-website/_next/static/css/cf01a7d2da36eba7.css","style"]
+2:I[7121,[],""]
+3:I[4581,[],""]
+4:"static/chunks/681-eec616cde128dfa1.js"
+5:"static/chunks/525-3905aab8d3477fae.js"
+6:"static/chunks/881-11edbcd082ae8051.js"
+7:"static/chunks/491-ef47181a4ec8c934.js"
+8:"static/chunks/40-de40afb738b2057b.js"
+9:"static/chunks/875-a3fa763274a3239b.js"
+a:"static/chunks/app/page-eaf83bcc6c290d63.js"
+b:I[1265,["681","$4","525","$5","881","$6","491","$7","40","$8","875","$9","974","$a"],"default"]
+c:"static/chunks/app/not-found-ecff0c0d1423837c.js"
+d:I[6874,["681","$4","345","$c"],"Wordmark"]
+14:"static/chunks/948-ba5d67de9f152cc7.js"
+15:"static/chunks/146-b1a1cdc59d154912.js"
+16:"static/chunks/644-f7e1c2fa68d3e694.js"
+17:"static/chunks/app/professionals/page-fe078369915fff1a.js"
+18:I[5727,["681","$4","948","$14","40","$8","146","$15","644","$16","337","$17"],"Navbar"]
+19:"WorkerApplication"
+1a:I[4444,["681","$4","948","$14","40","$8","146","$15","644","$16","337","$17"],"$19"]
+1b:I[5384,["681","$4","948","$14","40","$8","146","$15","644","$16","337","$17"],"Footer"]
+1c:I[484,[],"OutletBoundary"]
+1d:"$Sreact.suspense"
+20:"ViewportBoundary"
+21:I[484,[],"$20"]
+22:"MetadataBoundary"
+23:I[484,[],"$22"]
+:HL["/kaylo-website/_next/static/css/b2eb13dcea10ab5e.css","style"]
 :HL["/kaylo-website/app-art/mode_home.png","image"]
 :HL["/kaylo-website/app-art/icon_electric.png","image"]
 :HL["/kaylo-website/app-art/icon_plumb.png","image"]
@@ -27,16 +35,32 @@ b:I[484,[],"MetadataBoundary"]
 :HL["/kaylo-website/app-art/mode_farm.png","image"]
 :HL["/kaylo-website/app-art/mode_care.png","image"]
 :HL["/kaylo-website/_next/static/css/fd7cd336a7f23ebc.css","style"]
-7:null
-c:["$","$L16","28",{}]
-d:["$","meta",null,{"name":"next-size-adjust","content":""}]
-f:["$","$1","c",{"children":[null,["$","$L17",null,{"parallelRouterKey":"children","template":["$","$L18",null,{}]}]]}]
-12:["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/cf01a7d2da36eba7.css","precedence":"next"}]],["$","html",null,{"lang":"en","className":"__variable_1e15f0 __variable_2989a2","children":["$","body",null,{"children":[["$","a",null,{"className":"skip-link","href":"#main","children":"Skip to content"}],["$","$L17",null,{"parallelRouterKey":"children","template":["$","$L18",null,{}],"notFound":[["$","main",null,{"id":"main","tabIndex":-1,"className":"nf-page","children":[["$","div",null,{"className":"nf-stage","aria-hidden":"true","children":[["$","svg",null,{"className":"nf-route","viewBox":"0 0 520 440","fill":"none","children":["$","path",null,{"d":"M58 92c64-46 150-38 196 6 38 37 18 90 70 112 58 25 122-34 150 22 24 48-30 96-92 112-74 19-118-40-184-14-58 23-80 84-138 56-46-22-40-88 4-118"}]}],["$","div",null,{"className":"nf-number","children":[["$","span",null,{"children":"4"}],["$","span",null,{"className":"nf-zero","children":["$","img",null,{"src":"/kaylo-website/app-art/mode_home.png","alt":""}]}],["$","span",null,{"children":"4"}]]}],[["$","img","icon_electric",{"className":"nf-crew nf-crew-1","src":"/kaylo-website/app-art/icon_electric.png","alt":""}],["$","img","icon_plumb",{"className":"nf-crew nf-crew-2","src":"/kaylo-website/app-art/icon_plumb.png","alt":""}],["$","img","icon_carpentry",{"className":"nf-crew nf-crew-3","src":"/kaylo-website/app-art/icon_carpentry.png","alt":""}],["$","img","icon_garden",{"className":"nf-crew nf-crew-4","src":"/kaylo-website/app-art/icon_garden.png","alt":""}],["$","img","icon_coconut",{"className":"nf-crew nf-crew-5","src":"/kaylo-website/app-art/icon_coconut.png","alt":""}],["$","img","mode_farm",{"className":"nf-crew nf-crew-6","src":"/kaylo-website/app-art/mode_farm.png","alt":""}],["$","img","mode_care",{"className":"nf-crew nf-crew-7","src":"/kaylo-website/app-art/mode_care.png","alt":""}]]]}],["$","h1",null,{"children":"This page is out on a job."}],["$","footer",null,{"className":"nf-foot","children":[["$","a",null,{"className":"nf-back","href":"/kaylo-website/","children":[["$","$L19",null,{"iconNode":[["path",{"d":"m12 19-7-7 7-7","key":"1l729n"}],["path",{"d":"M19 12H5","key":"x3x0zl"}]],"className":"lucide-arrow-left","size":14,"aria-hidden":"true"}],"Back to home"]}],["$","a",null,{"className":"nf-wordmark","href":"/kaylo-website/","aria-label":"Kaylo home","children":["$","$L1a",null,{}]}]]}]]}],[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/fd7cd336a7f23ebc.css","precedence":"next"}]]]}]]}]}]]}]
-9:300
-15:true
-9:C
-14:0
+:HL["/kaylo-website/images/craftsman.jpg","image"]
+:HL["/kaylo-website/_next/static/css/ab21642d2653e6f2.css","style"]
+f:X
+12:X
+12:C
+13:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$1","c",{"children":[[["$","$L18",null,{}],["$","main",null,{"id":"main","tabIndex":-1,"children":["$","section",null,{"className":"professional-page wrap","children":[["$","div",null,{"className":"professional-intro","children":[["$","a",null,{"className":"breadcrumb","href":"/kaylo-website/","children":"Kaylo / For professionals"}],["$","p",null,{"className":"eyebrow","children":"GOOD WORK DESERVES TO BE FOUND"}],["$","h1",null,{"children":["You bring",["$","br",null,{}],"the ",["$","em",null,{"children":"know-how."}]]}],["$","p",null,{"children":"We’re building a simpler way for skilled people to connect with the people who need them."}],["$","img",null,{"src":"/kaylo-website/images/craftsman.jpg","width":1448,"height":1086,"alt":"A skilled carpenter in his workshop"}],["$","ul",null,{"children":[["$","li",null,{"children":"Identity documents and the qualifications required for your chosen role"}],["$","li",null,{"children":"A UPI ID or bank account for payouts"}],["$","li",null,{"children":"An email address you can open, for your partner login"}]]}]]}],["$","$L1a",null,{}]]}]}],["$","$L1b",null,{}]],[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/ab21642d2653e6f2.css","precedence":"next"}]],["$","$L1c",null,{"children":["$","$1d",null,{"name":"Next.MetadataOutlet","children":"$@1e"}]}]]}],"p":"$@1f","v":null,"s":"$f"}}]]
+10:[["children",{"s":"professionals","h":96,"d":{"r":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"p":"$@11","v":"$12","s":"$f"},"c":"$Q13"}]]
+0:{"t":{"t":{"s":"","h":80,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/b2eb13dcea10ab5e.css","precedence":"next"}]],["$","html",null,{"lang":"en","className":"__variable_1e15f0 __variable_2989a2","children":["$","body",null,{"children":[["$","a",null,{"className":"skip-link","href":"#main","children":"Skip to content"}],["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}],"notFound":[["$","main",null,{"id":"main","tabIndex":-1,"className":"nf-page","children":[["$","div",null,{"className":"nf-stage","aria-hidden":"true","children":[["$","svg",null,{"className":"nf-route","viewBox":"0 0 520 440","fill":"none","children":["$","path",null,{"d":"M58 92c64-46 150-38 196 6 38 37 18 90 70 112 58 25 122-34 150 22 24 48-30 96-92 112-74 19-118-40-184-14-58 23-80 84-138 56-46-22-40-88 4-118"}]}],["$","div",null,{"className":"nf-number","children":[["$","span",null,{"children":"4"}],["$","span",null,{"className":"nf-zero","children":["$","img",null,{"src":"/kaylo-website/app-art/mode_home.png","alt":""}]}],["$","span",null,{"children":"4"}]]}],[["$","img","icon_electric",{"className":"nf-crew nf-crew-1","src":"/kaylo-website/app-art/icon_electric.png","alt":""}],["$","img","icon_plumb",{"className":"nf-crew nf-crew-2","src":"/kaylo-website/app-art/icon_plumb.png","alt":""}],["$","img","icon_carpentry",{"className":"nf-crew nf-crew-3","src":"/kaylo-website/app-art/icon_carpentry.png","alt":""}],["$","img","icon_garden",{"className":"nf-crew nf-crew-4","src":"/kaylo-website/app-art/icon_garden.png","alt":""}],["$","img","icon_coconut",{"className":"nf-crew nf-crew-5","src":"/kaylo-website/app-art/icon_coconut.png","alt":""}],["$","img","mode_farm",{"className":"nf-crew nf-crew-6","src":"/kaylo-website/app-art/mode_farm.png","alt":""}],["$","img","mode_care",{"className":"nf-crew nf-crew-7","src":"/kaylo-website/app-art/mode_care.png","alt":""}]]]}],["$","h1",null,{"children":"This page is out on a job."}],["$","footer",null,{"className":"nf-foot","children":[["$","a",null,{"className":"nf-back","href":"/kaylo-website/","children":[["$","$Lb",null,{"iconNode":[["path",{"d":"m12 19-7-7 7-7","key":"1l729n"}],["path",{"d":"M19 12H5","key":"x3x0zl"}]],"className":"lucide-arrow-left","size":14,"aria-hidden":"true"}],"Back to home"]}],["$","a",null,{"className":"nf-wordmark","href":"/kaylo-website/","aria-label":"Kaylo home","children":["$","$Ld",null,{}]}]]}]]}],[["$","link","0",{"rel":"stylesheet","href":"/kaylo-website/_next/static/css/fd7cd336a7f23ebc.css","precedence":"next"}]]]}]]}]}]]}],"p":"$@e","v":null,"s":"$f"},"c":"$Q10"},"h":{"r":["$","$1","h",{"children":[null,["$","$L21",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#f8f7f1"}]]}],["$","$L23",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$1d",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Join as a professional | Kaylo"}],["$","meta","1",{"name":"description","content":"Bring your skill to Kaylo. Apply to connect with local customers for home, farm and care services."}],["$","meta","2",{"name":"application-name","content":"Kaylo"}],["$","meta","3",{"name":"robots","content":"index, follow"}],["$","meta","4",{"name":"googlebot","content":"index, follow, max-image-preview:large"}],["$","link","5",{"rel":"canonical","href":"https://kaylo.in/professionals/"}],["$","meta","6",{"property":"og:title","content":"Join as a professional | Kaylo"}],["$","meta","7",{"property":"og:description","content":"Bring your skill to Kaylo. Apply to connect with local customers for home, farm and care services."}],["$","meta","8",{"property":"og:url","content":"https://kaylo.in/professionals/"}],["$","meta","9",{"property":"og:site_name","content":"Kaylo"}],["$","meta","10",{"property":"og:locale","content":"en_IN"}],["$","meta","11",{"property":"og:image","content":"https://kaylo.in/images/kaylo-social.png"}],["$","meta","12",{"property":"og:image:type","content":"image/png"}],["$","meta","13",{"property":"og:image:width","content":"1200"}],["$","meta","14",{"property":"og:image:height","content":"630"}],["$","meta","15",{"property":"og:image:alt","content":"Kaylo. Skilled people. Right when you need them. Home, Farm and Care."}],["$","meta","16",{"property":"og:type","content":"website"}],["$","meta","17",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","18",{"name":"twitter:title","content":"Join as a professional | Kaylo"}],"$L24","$L25","$L26","$L27","$L28","$L29","$L2a","$L2b","$L2c","$L2d"]}]}],null]}],"$L2e"]}],"p":"$@2f","v":null,"s":"$f"}},"a":"$@30","u":"$@31","b":"AuI-zhOORDNrbyFLbqdau"}
+32:I[6869,[],"IconMark"]
+1e:null
+24:["$","meta","19",{"name":"twitter:description","content":"Bring your skill to Kaylo. Apply to connect with local customers for home, farm and care services."}]
+25:["$","meta","20",{"name":"twitter:image","content":"https://kaylo.in/images/kaylo-social.png"}]
+26:["$","meta","21",{"name":"twitter:image:alt","content":"Kaylo. Skilled people. Right when you need them. Home, Farm and Care."}]
+27:["$","link","22",{"rel":"shortcut icon","href":"/kaylo-website/icons/kaylo-mark-v2.ico"}]
+28:["$","link","23",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2.ico","type":"image/x-icon","sizes":"16x16 32x32 48x48"}]
+29:["$","link","24",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2-192.png","type":"image/png","sizes":"192x192"}]
+2a:["$","link","25",{"rel":"icon","href":"/kaylo-website/icons/kaylo-mark-v2-96.png","type":"image/png","sizes":"96x96"}]
+2b:["$","link","26",{"rel":"apple-touch-icon","href":"/kaylo-website/icons/kaylo-apple-touch-v2.png","type":"image/png","sizes":"180x180"}]
+2c:["$","link","27",{"rel":"mask-icon","href":"/kaylo-website/icons/kaylo-mask-v2.svg","color":"#264d36"}]
+2d:["$","$L32","28",{}]
+2e:["$","meta",null,{"name":"next-size-adjust","content":""}]
+f:300
+31:true
+f:C
+30:0
+11:"$undefined"
 e:"$undefined"
-10:"$undefined"
-13:"$undefined"
-8:"$undefined"
+2f:"$undefined"
+1f:"$undefined"
