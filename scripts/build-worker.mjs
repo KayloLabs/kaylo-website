@@ -23,7 +23,7 @@ export async function buildWorker(directory=process.cwd()){
  await writeFile(local('dist/server/index.js'),worker);
  await copyFile(local('.openai/hosting.json'),local('dist/.openai/hosting.json'));
  await cp(local('drizzle'),local('dist/.openai/drizzle'),{recursive:true});
- await writeFile(local('dist/server/wrangler.json'),JSON.stringify({name:'kaylo-website',main:'index.js',compatibility_date:'2026-05-15',assets:{directory:'../client',binding:'ASSETS',run_worker_first:['/api/*']},d1_databases:[{binding:'DB',database_name:'kaylo-professionals',database_id:'00000000-0000-4000-8000-000000000000'}]}));
+ await writeFile(local('dist/server/wrangler.json'),JSON.stringify({name:'kaylo-website',main:'index.js',compatibility_date:'2026-05-15',assets:{directory:'../client',binding:'ASSETS',not_found_handling:'404-page',run_worker_first:['/api/*']},d1_databases:[{binding:'DB',database_name:'kaylo-professionals',database_id:'00000000-0000-4000-8000-000000000000'}]}));
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await buildWorker();

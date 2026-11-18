@@ -36,6 +36,8 @@ test('built Worker is standalone ESM with validated public config and preserved 
  assert.equal(await readFile(path.join(root,'dist/client/index.html'),'utf8'),'<main>Kaylo</main>');
  assert.equal(JSON.parse(await readFile(path.join(root,'dist/.openai/hosting.json'),'utf8')).d1,'DB');
  assert.equal(JSON.parse(await readFile(path.join(root,'dist/server/wrangler.json'),'utf8')).d1_databases[0].binding,'DB');
+ // Missing pages get the designed 404.html with a 404 status, not an empty body.
+ assert.equal(JSON.parse(await readFile(path.join(root,'dist/server/wrangler.json'),'utf8')).assets.not_found_handling,'404-page');
  assert.equal(await readFile(path.join(root,'dist/.openai/drizzle/0000.sql'),'utf8'),'-- Existing D1 migration');
 }));
 
