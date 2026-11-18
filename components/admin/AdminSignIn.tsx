@@ -16,8 +16,13 @@ type Props = {
   connectionError: string;
   retry: () => void;
   onSignedIn: (admin: Admin) => void;
+  /** Started from "Set up two-step verification" inside the portal. */
+  setupMode?: boolean;
+  onSetupDone?: () => void;
 };
-export default function AdminSignIn({ session, ready, connectionError, retry, onSignedIn }: Props) {
+export default function AdminSignIn(
+  { session, ready, connectionError, retry, onSignedIn, setupMode = false, onSetupDone }: Props,
+) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
@@ -107,12 +112,13 @@ export default function AdminSignIn({ session, ready, connectionError, retry, on
           setStep(null);
           setSetup(null);
           setCode('');
+          onSetupDone?.();
           setNotice(
             'Authenticator added. Sign in again with your password and authenticator code.',
           );
         }
       } else {
-        const result = await session.signIn(email, password);
+        const result = await session.signIn(email, password, { setupAuthenticator: setupMode });
         if (alive.current) accept(result);
       }
     });
@@ -129,13 +135,19 @@ export default function AdminSignIn({ session, ready, connectionError, retry, on
             ? 'Check your authenticator'
             : step?.kind === 'enrollment'
             ? 'Secure your admin account'
+            : setupMode
+            ? 'Set up two-step verification'
             : 'Admin sign in'}
         </h1>
         <p>
           {step?.kind === 'challenge'
             ? 'Enter the current code from your authenticator app.'
             : step?.kind === 'enrollment'
-            ? 'An authenticator is required before you can open partner applications.'
+            ? setupMode
+              ? 'Add an authenticator to open payments, account deletion and support.'
+              : 'An authenticator is required before you can open partner applications.'
+            : setupMode
+            ? 'Sign in with your password. Next you will add Kaylo Admin to an authenticator app.'
             : 'Manage partner operations.'}
         </p>
         {notice && <p role='status' className='ops-notice'>{notice}</p>}
@@ -280,6 +292,11 @@ export default function AdminSignIn({ session, ready, connectionError, retry, on
         {step && (
           <button type='button' className='ops-text-button' disabled={busy} onClick={reset}>
             Back to sign in
+          </button>
+        )}
+        {setupMode && !step && (
+          <button type='button' className='ops-text-button' disabled={busy} onClick={() => onSetupDone?.()}>
+            Cancel setup
           </button>
         )}
         {!ready && !busy && (

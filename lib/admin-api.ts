@@ -10,7 +10,17 @@ export type { AdminAuthStep, TotpSetup } from './admin-mfa.ts';
 import { retryAfterSeconds, uploadRetryMessage } from './retry-feedback.ts';
 import publicConfig from '../server/kaylo-public-config.json' with { type: 'json' };
 export type PortalConfig = { firebaseApiKey: string; supabaseUrl: string; supabaseAnonKey: string };
-export type Admin = { email: string; role: 'admin' | 'reviewer' };
+/**
+ * mfa: this sign-in used a current authenticator code. emailVerified: Firebase
+ * has verified the address, which authenticator setup requires. Both come from
+ * the server's session check; the protected functions still enforce MFA.
+ */
+export type Admin = {
+  email: string;
+  role: 'admin' | 'reviewer';
+  mfa?: boolean;
+  emailVerified?: boolean;
+};
 export type Status = 'submitted' | 'under_review' | 'changes_requested' | 'approved' | 'rejected';
 export const statuses: Record<Status, string> = {
   submitted: 'Documents pending',
@@ -221,6 +231,8 @@ const messages: Record<string, string> = {
   ADMIN_EMAIL_VERIFICATION_REQUIRED:
     'Verify your administrator email before setting up an authenticator.',
   ADMIN_RECENT_SIGN_IN_REQUIRED: 'Please sign in again before setting up your authenticator.',
+  AREA_MFA_REQUIRED:
+    'This area needs two-step verification. Set up an authenticator, then sign in with its code.',
   ADMIN_MFA_CONFIGURATION_INVALID:
     'Administrator authentication is temporarily unavailable. Contact the project owner.',
   ADMIN_ONLY: 'This account does not have Kaylo administrator access.',
@@ -327,6 +339,9 @@ export class AdminSession {
   private enrollment: EnrollmentSession | null = null;
   private enrollmentExpires = 0;
   private enrollmentChecking = false;
+  // Set for a sign-in started from "Set up two-step verification", so the
+  // server offers authenticator setup before the rollout flag requires it.
+  private setupRequested = false;
   private authenticationPending = false;
   private authorized = false;
   private role: Admin['role'] | null = null;
@@ -376,9 +391,11 @@ export class AdminSession {
       : 0;
   }
   private async resolveSession(): Promise<Admin | AdminAuthStep> {
-    const result = await this.request<
-      { admin?: Admin; applications?: ApplicationListPage; mfa?: { enrollment_required?: boolean; expires_at?: number } }
-    >('session', { include_applications: true });
+    const result = await this.request<{
+      admin?: Admin;
+      applications?: ApplicationListPage;
+      mfa?: { enrollment_required?: boolean; expires_at?: number; verified?: boolean; email_verified?: boolean };
+    }>('session', { include_applications: true, ...(this.setupRequested ? { enroll_mfa: true } : {}) });
     if (
       result.mfa?.enrollment_required === true && typeof result.mfa.expires_at === 'number' &&
       result.mfa.expires_at > Date.now()
@@ -393,15 +410,31 @@ export class AdminSession {
     ) throw new PortalError('Unable to confirm administrator access. Please sign in again.');
     this.authorized = true;
     this.role = result.admin.role;
+    // Older servers omit the MFA status; unknown stays absent, never false.
+    const admin: Admin = { email: result.admin.email, role: result.admin.role };
+    if (typeof result.mfa?.verified === 'boolean') admin.mfa = result.mfa.verified;
+    if (typeof result.mfa?.email_verified === 'boolean') {
+      admin.emailVerified = result.mfa.email_verified;
+    }
     if (result.applications && Array.isArray(result.applications.applications) &&
       Number.isSafeInteger(result.applications.total) && result.applications.total >= 0) {
       this.rememberApplications(initialApplicationList, result.applications);
       this.initialListKey = applicationListKey(initialApplicationList);
     }
-    return result.admin;
+    return admin;
   }
-  async signIn(email: string, password: string): Promise<Admin | AdminAuthStep> {
+
+  /** True while an administrator session is open. */
+  get signedIn() {
+    return this.authorized && this.token.length > 0;
+  }
+  async signIn(
+    email: string,
+    password: string,
+    options: { setupAuthenticator?: boolean } = {},
+  ): Promise<Admin | AdminAuthStep> {
     this.signOut();
+    this.setupRequested = options.setupAuthenticator === true;
     const generation = this.generation;
     try {
       const { response: r, body: b } = await this.reply(
@@ -546,6 +579,32 @@ export class AdminSession {
       if (generation === this.generation) this.authenticationPending = false;
     }
   }
+  /** Emails Firebase's verification link to the signed-in administrator. */
+  async sendEmailVerification(): Promise<void> {
+    const generation = this.generation;
+    if (!this.signedIn) throw new PortalError('Please sign in again.', 401, 'SESSION_CHANGED');
+    const token = await this.accessToken();
+    this.assertGeneration(generation);
+    const { response, body } = await this.reply(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${
+        encodeURIComponent(this.config.firebaseApiKey)
+      }`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestType: 'VERIFY_EMAIL', idToken: token }),
+      },
+      true,
+    );
+    this.assertGeneration(generation);
+    if (!response.ok) {
+      throw new PortalError(
+        body?.error?.message === 'TOO_MANY_ATTEMPTS_TRY_LATER'
+          ? 'Too many emails were requested. Wait a few minutes before asking again.'
+          : 'The verification email could not be sent. Please retry.',
+      );
+    }
+  }
   private setupView(): TotpSetup {
     const { sessionInfo: _, ...setup } = this.enrollment!;
     return setup;
@@ -667,6 +726,7 @@ export class AdminSession {
     this.enrollment = null;
     this.enrollmentExpires = 0;
     this.enrollmentChecking = false;
+    this.setupRequested = false;
     this.authenticationPending = false;
     this.reads.clear();
     this.invalidateApplications();
@@ -852,6 +912,15 @@ export class AdminSession {
     } catch (error) {
       if (generation !== this.generation) {
         throw new PortalError('Please sign in again.', 401, 'SESSION_CHANGED');
+      }
+      // Payments, account deletion and support always require an
+      // authenticator. Their refusal means "set one up", not "session over":
+      // keep the session so the rest of the portal keeps working.
+      if (
+        endpoint !== 'admin-applications' && error instanceof PortalError &&
+        ['ADMIN_MFA_REQUIRED', 'ADMIN_EMAIL_VERIFICATION_REQUIRED'].includes(error.code)
+      ) {
+        throw new PortalError(messages.AREA_MFA_REQUIRED, error.status, error.code);
       }
       if (error instanceof PortalError && (error.status === 401 ||
         ['ADMIN_ACCESS_REQUIRED', 'ADMIN_ONLY', 'ADMIN_MFA_REQUIRED', 'ADMIN_EMAIL_VERIFICATION_REQUIRED'].includes(error.code))) {

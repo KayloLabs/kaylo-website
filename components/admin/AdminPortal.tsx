@@ -3,6 +3,7 @@ import AdminSignIn from './AdminSignIn';
 import { FinancePanel } from './FinancePanel';
 import { PrivacyPanel } from './PrivacyPanel';
 import { SupportPanel } from './SupportPanel';
+import { TwoStepRequired } from './TwoStepRequired';
 import ApplicationQueue from './ApplicationQueue';
 import { type Payout, PayoutDetails } from './PayoutDetails';
 import { sitePath } from '../../lib/site-path';
@@ -22,6 +23,7 @@ import {
   ClipboardList,
   CreditCard,
   LoaderCircle,
+  LockKeyhole,
   LogOut,
   Mail,
   Moon,
@@ -80,6 +82,8 @@ export default function AdminPortal() {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [section, setSection] = useState<'applications' | 'finance' | 'privacy' | 'support'>('applications');
   const [financePending, setFinancePending] = useState(false);
+  // A sign-in started from "Set up two-step verification".
+  const [setupMode, setSetupMode] = useState(false);
   const [configReady, setConfigReady] = useState(false);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
@@ -148,6 +152,15 @@ export default function AdminPortal() {
     };
   }, [admin, signOut]);
   const report = useCallback((e: unknown) => {
+    // A protected area asked for an authenticator while the session is still
+    // valid: show that area's setup card instead of ending the session.
+    if (
+      e instanceof PortalError && session.current?.signedIn &&
+      ['ADMIN_MFA_REQUIRED', 'ADMIN_EMAIL_VERIFICATION_REQUIRED'].includes(e.code)
+    ) {
+      setAdmin((current) => current && { ...current, mfa: false });
+      return;
+    }
     if (
       e instanceof PortalError &&
       (e.status === 401 ||
@@ -155,6 +168,15 @@ export default function AdminPortal() {
     ) signOut();
     setError(errorText(e));
   }, [signOut]);
+  const startTwoStepSetup = useCallback(() => {
+    signOut();
+    setError('');
+    setSetupMode(true);
+  }, [signOut]);
+  const sendVerification = useCallback(async () => {
+    if (!session.current) throw new PortalError('Please sign in again.', 401);
+    await session.current.sendEmailVerification();
+  }, []);
   useEffect(() => {
     const t = setTimeout(() => {
       setQuery(search.trim());
@@ -264,8 +286,11 @@ export default function AdminPortal() {
             ready={configReady}
             connectionError={error}
             retry={loadConfig}
+            setupMode={setupMode}
+            onSetupDone={() => setSetupMode(false)}
             onSignedIn={(a) => {
               setError('');
+              setSetupMode(false);
               setAdmin(a);
             }}
           />
@@ -277,9 +302,9 @@ export default function AdminPortal() {
               <nav aria-label='Administration areas'>
                 <button disabled={financePending} aria-current={section === 'applications' ? 'page' : undefined} onClick={() => { setSection('applications'); setError(''); setNotice(''); }}><ClipboardList size={18} /> Applications</button>
                 {admin.role === 'admin' && <>
-                  <button disabled={financePending} aria-current={section === 'finance' ? 'page' : undefined} onClick={() => { setSection('finance'); setError(''); setNotice(''); }}><CreditCard size={18} /> Payments & resolutions</button>
-                  <button disabled={financePending} aria-current={section === 'privacy' ? 'page' : undefined} onClick={() => { setSection('privacy'); setError(''); setNotice(''); }}><ShieldCheck size={18} /> Account deletion</button>
-                  <button disabled={financePending} aria-current={section === 'support' ? 'page' : undefined} onClick={() => { setSection('support'); setError(''); setNotice(''); }}><Mail size={18} /> General support</button>
+                  <button disabled={financePending} aria-current={section === 'finance' ? 'page' : undefined} onClick={() => { setSection('finance'); setError(''); setNotice(''); }}><CreditCard size={18} /> Payments & resolutions{admin.mfa === false && <LockKeyhole size={14} className='ops-lock' aria-label='Needs two-step verification' />}</button>
+                  <button disabled={financePending} aria-current={section === 'privacy' ? 'page' : undefined} onClick={() => { setSection('privacy'); setError(''); setNotice(''); }}><ShieldCheck size={18} /> Account deletion{admin.mfa === false && <LockKeyhole size={14} className='ops-lock' aria-label='Needs two-step verification' />}</button>
+                  <button disabled={financePending} aria-current={section === 'support' ? 'page' : undefined} onClick={() => { setSection('support'); setError(''); setNotice(''); }}><Mail size={18} /> General support{admin.mfa === false && <LockKeyhole size={14} className='ops-lock' aria-label='Needs two-step verification' />}</button>
                 </>}
               </nav>
               <div className='ops-sidebar-foot'><span>Kaylo operations</span><small>All times in India Standard Time</small></div>
@@ -302,7 +327,17 @@ export default function AdminPortal() {
                   </button>
                 </div>
               )}
-              {section === 'finance' && admin.role === 'admin' && session.current
+              {section !== 'applications' && admin.role === 'admin' && session.current && admin.mfa === false
+                ? (
+                  <TwoStepRequired
+                    area={section === 'finance' ? 'Payments & resolutions' : section === 'privacy' ? 'Account deletion' : 'General support'}
+                    email={admin.email}
+                    emailVerified={admin.emailVerified !== false}
+                    onSetup={startTwoStepSetup}
+                    onSendVerification={sendVerification}
+                  />
+                )
+                : section === 'finance' && admin.role === 'admin' && session.current
                 ? <FinancePanel session={session.current} onError={report} theme={theme} onPendingChange={setFinancePending}/>
                 : section === 'privacy' && admin.role === 'admin' && session.current
                 ? <PrivacyPanel session={session.current} onError={report} theme={theme} onPendingChange={setFinancePending}/>
