@@ -1,13 +1,13 @@
 # Kaylo Admin authenticator rollout
 
-The source supports Firebase TOTP multi-factor authentication. This does **not** mean MFA is active in the live Firebase project or deployed admin function. Confirm the project configuration, function deployment, private flag, administrator enrollment and live sign-in separately.
+The source supports Firebase TOTP multi-factor authentication, and the matching backend requires it for administrator access. This does **not** establish that the matching function or Firebase configuration is deployed. Confirm the project configuration, function deployment, private setting, administrator enrollment and live sign-in separately.
 
 ## Prerequisites
 
 - Firebase Authentication with Identity Platform, email/password sign-in, and TOTP enabled for the project. Firebase requires verified email for MFA. Review the project's actual plan and usage limits before upgrading it; this can affect the whole project's authentication limits.
 - The administrator must remain in the active `admin_users` allowlist. Enrollment does not grant administrator access.
 - The browser Firebase key must allow Identity Toolkit and Secure Token APIs from the deployed website origin. It identifies the project; it is not an administrator credential.
-- Deploy the matching website and `admin-applications` function before enforcement. Existing application/document endpoints must not be exposed through another unguarded function.
+- Prepare the matching website and `admin-applications` function with mandatory MFA. Existing application/document endpoints must not be exposed through another unguarded function.
 - The operator needs an authenticator on their own device and a verified recovery process with the Google Cloud/Firebase project owner.
 
 Official references:
@@ -21,10 +21,10 @@ Official references:
 
 ## Activation order
 
-1. Deploy the compatible website and admin function while the private Supabase function environment variable `KAYLO_ADMIN_REQUIRE_MFA` is absent or exactly `false`. Existing password access continues; do not describe it as MFA-protected.
+1. Prepare the compatible website and admin function. The private Supabase function environment variable `KAYLO_ADMIN_REQUIRE_MFA` must be absent or exactly `true`. The matching backend requires MFA in both cases; `false`, an empty string and other values fail closed with a configuration error. Do not use a password-only deployment stage.
 2. Verify the intended administrator's email ownership through Firebase's actual verification flow. Do not simply mark an unverified mailbox verified.
 3. Enable TOTP in Firebase Identity Platform through an authorized project-owner operation. Do not place project-management credentials in the website.
-4. Set the **private function environment variable** `KAYLO_ADMIN_REQUIRE_MFA=true` and verify the deployed function sees it. It must never be a `NEXT_PUBLIC_` variable. Unknown values such as an empty string, `TRUE` or `1` fail closed.
+4. Deploy the matching website and backend after Firebase TOTP is configured. Verify the deployed function sees the intended **private environment setting** and rejects password-only protected requests. `KAYLO_ADMIN_REQUIRE_MFA` must never be a `NEXT_PUBLIC_` variable. Unknown values such as an empty string, `TRUE` or `1` fail closed.
 5. Sign in to Kaylo Admin. An allowlisted, email-verified administrator without an enrolled factor receives only setup eligibility after recent password authentication. This response contains no applications, documents, payout information or administrator record. Eligibility expires five minutes after password authentication.
 6. Add the displayed setup key to the administrator's authenticator as a time-based account named **Kaylo Admin**. Confirm using its current code. The key and enrollment session stay in tab memory; no third-party QR endpoint is used.
 7. Sign in again with password and authenticator code. Confirm list, document and review access. Verify password-only requests to list/detail/document/review/retry/payout actions are rejected. A valid signature alone is not sufficient.

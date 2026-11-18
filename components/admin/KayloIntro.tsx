@@ -36,7 +36,8 @@ function ServiceIcon({service}:{service:Service}){
  </svg>;
 }
 
-export function KayloIntro({onComplete,onReveal,label='Opening Kaylo Admin',curtain=false}:{onComplete:()=>void;onReveal?:()=>void;label?:string;curtain?:boolean}){
+export function KayloIntro({onComplete,onReveal,label='Opening Kaylo Admin',curtain=false,brandOnly=false}:{onComplete:()=>void;onReveal?:()=>void;label?:string;curtain?:boolean;brandOnly?:boolean}){
+ const duration=brandOnly?1200:introDuration;
  const container=useRef<HTMLElement>(null);
  const callback=useRef(onComplete);
  const finished=useRef(false);
@@ -66,10 +67,10 @@ export function KayloIntro({onComplete,onReveal,label='Opening Kaylo Admin',curt
    if(ending||finished.current)return;
    clear();setScene(0);setClosing(false);setReduced(preference.matches);setRun(value=>value+1);
    if(preference.matches){timers.push(window.setTimeout(finish,700));return;}
-   for(let index=0;index<=services.length;index++){
+   for(let index=0;!brandOnly&&index<=services.length;index++){
     timers.push(window.setTimeout(()=>setScene(index+1),logoDuration+index*slideDuration));
    }
-   timers.push(window.setTimeout(finish,introDuration));
+   timers.push(window.setTimeout(finish,duration));
   };
   const keydown=(event:KeyboardEvent)=>{
    if(event.key==='Enter'||event.key==='Escape'){event.preventDefault();finish();}
@@ -78,7 +79,7 @@ export function KayloIntro({onComplete,onReveal,label='Opening Kaylo Admin',curt
   container.current?.focus({preventScroll:true});
   play();preference.addEventListener('change',play);window.addEventListener('keydown',keydown);
   return()=>{clear();preference.removeEventListener('change',play);window.removeEventListener('keydown',keydown);};
- },[complete,curtain]);
+ },[complete,curtain,brandOnly,duration]);
  const service=scene>0&&scene<=services.length?services[scene-1]:null;
  const isLastScene=scene===services.length+1;
  return <motion.section ref={container} tabIndex={-1} className={`kaylo-intro ${curtain?'site-intro':''}`} role="dialog" aria-modal="true" aria-label={label} data-reduced={reduced} initial={false} animate={curtain&&!reduced?{y:closing?'-100%':'0%'}:{opacity:closing?0:1}} transition={{duration:reduced?0:curtain?.8:.2,ease:[.76,0,.24,1]}}>
@@ -90,7 +91,7 @@ export function KayloIntro({onComplete,onReveal,label='Opening Kaylo Admin',curt
      </motion.div>
     </AnimatePresence>
    </div>
-   <div className="kaylo-intro__progress"><motion.span key={run} initial={reduced?false:{scaleX:0}} animate={{scaleX:1}} transition={{duration:reduced?0:introDuration/1000,ease:'linear'}}/></div>
+   <div className="kaylo-intro__progress"><motion.span key={run} initial={reduced?false:{scaleX:0}} animate={{scaleX:1}} transition={{duration:reduced?0:duration/1000,ease:'linear'}}/></div>
   </div>
  </motion.section>;
 }

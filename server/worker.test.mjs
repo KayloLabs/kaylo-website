@@ -1,9 +1,31 @@
-import test from 'node:test';import assert from 'node:assert/strict';import worker,{validate} from './worker.mjs';
-test('portal configuration exposes public connection fields only',async()=>{const response=await worker.fetch(new Request('https://kaylo.example/api/kaylo-config'),{SUPABASE_SERVICE_ROLE_KEY:'private',GMAIL_APP_PASSWORD:'private',APPLICATION_CORRECTION_SECRET:'private'});const body=await response.json();assert.deepEqual(Object.keys(body).sort(),['firebaseApiKey','supabaseAnonKey','supabaseUrl']);assert.equal(response.headers.get('Cache-Control'),'no-store');assert.equal(JSON.stringify(body).includes('private'),false);});
-const valid=()=>({id:crypto.randomUUID(),name:'Test Professional',phone:'9876543210',email:'test@example.com',city:'Kochi',skill:'Electrician',experience:'3–5 years',about:'Synthetic local test',consent:true});
-const req=(body,extras={})=>new Request('https://kaylo.example/api/applications',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://kaylo.example',...extras},body:JSON.stringify(body)});
-test('valid application normalized; invalid phone and consent rejected',()=>{assert.equal(validate(valid()).value.phone,'+919876543210');assert.ok(validate({...valid(),phone:'123'}).error);assert.ok(validate({...valid(),consent:false}).error);assert.ok(validate({...valid(),skill:'unknown'}).error)});
-test('successful response follows durable insert with bound parameters',async()=>{let saved;const env={DB:{prepare(sql){assert.match(sql,/ON CONFLICT\(id\) DO NOTHING/);return {bind(...params){saved=params;return {async run(){return {success:true}}}}}}}};const v=valid();const r=await worker.fetch(req(v),env);assert.equal(r.status,201);assert.equal((await r.json()).reference,v.id);assert.equal(saved[1],v.name)});
-test('failed storage returns retryable error, never success',async()=>{const r=await worker.fetch(req(valid()),{DB:{prepare(){throw new Error('offline')}}});assert.equal(r.status,503);assert.match((await r.json()).error,/couldn’t save/)});
-test('no application listing and no cross-origin submission',async()=>{assert.equal((await worker.fetch(new Request('https://kaylo.example/api/applications'),{})).status,405);assert.equal((await worker.fetch(req(valid(),{Origin:'https://other.example'}),{})).status,403)});
-test('malformed and oversized requests fail before storage',async()=>{const r=await worker.fetch(new Request('https://kaylo.example/api/applications',{method:'POST',headers:{'Content-Type':'application/json'},body:'{'}),{});assert.equal(r.status,400);assert.equal((await worker.fetch(req({...valid(),about:'x'.repeat(9000)}),{})).status,413)});
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import worker from './worker.mjs';
+test('portal configuration exposes public connection fields only',async()=>{
+ const response=await worker.fetch(new Request('https://kaylo.example/api/kaylo-config'),{SUPABASE_SERVICE_ROLE_KEY:'private',GMAIL_APP_PASSWORD:'private',APPLICATION_CORRECTION_SECRET:'private'});
+ const body=await response.json();
+ assert.deepEqual(Object.keys(body).sort(),['firebaseApiKey','supabaseAnonKey','supabaseUrl']);
+ assert.equal(response.headers.get('Cache-Control'),'no-store');
+ assert.equal(JSON.stringify(body).includes('private'),false);
+});
+test('retired applications endpoint never reads request data or reaches storage',async()=>{
+ for(const method of ['GET','POST','PUT','OPTIONS'])for(const suffix of ['', '/']){
+  const request={url:`https://kaylo.example/api/applications${suffix}`,method,text(){throw Error('Body must not be buffered');},get body(){throw Error('Body must not be streamed');}};
+  const response=await worker.fetch(request,{get DB(){throw Error('D1 must not be accessed');}});
+  assert.equal(response.status,410);
+  assert.equal(response.headers.get('Cache-Control'),'no-store');
+ }
+});
+test('static assets receive real anti-framing and content-type headers',async()=>{
+ const response=await worker.fetch(new Request('https://kaylo.example/admin/'),{ASSETS:{fetch:()=>new Response('<html>test</html>',{headers:{'Content-Type':'text/html','Cache-Control':'public, max-age=60'}})}});
+ assert.equal(await response.text(),'<html>test</html>');
+ assert.equal(response.headers.get('X-Frame-Options'),'DENY');
+ assert.equal(response.headers.get('Content-Security-Policy'),"frame-ancestors 'none'; base-uri 'none'; object-src 'none'");
+ assert.equal(response.headers.get('X-Content-Type-Options'),'nosniff');
+ assert.equal(response.headers.get('Cache-Control'),'public, max-age=60');
+});
+test('unknown API and unsupported asset methods never fall through',async()=>{
+ assert.equal((await worker.fetch(new Request('https://kaylo.example/api/unknown'),{})).status,404);
+ assert.equal((await worker.fetch(new Request('https://kaylo.example/admin/',{method:'POST',body:'x'.repeat(20000)}),{})).status,405);
+ assert.equal((await worker.fetch(new Request('https://kaylo.example/api/kaylo-config',{method:'POST',body:'bad'}),{})).status,405);
+});

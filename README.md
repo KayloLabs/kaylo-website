@@ -1,6 +1,6 @@
 # Kaylo website
 
-A responsive Next.js 16 / React 19 landing page, built with TypeScript, Tailwind CSS 4, Motion and Lucide. Static export for GitHub Pages, with Firebase authentication and the existing protected Supabase backend.
+A responsive Next.js 16 / React 19 landing page, built with TypeScript, Tailwind CSS 4, Motion and Lucide. A static frontend served on kaylo.in through Sites, with a GitHub Pages mirror, Firebase authentication and the existing protected Supabase backend.
 
 ## Run
 
@@ -11,7 +11,7 @@ A responsive Next.js 16 / React 19 landing page, built with TypeScript, Tailwind
 
 ## Design and interactions
 
-Ivory, natural green and earthy neutrals, self-hosted Plus Jakarta Sans and Hanken Grotesk, original editorial imagery. Service tabs show Home, Farm and Care; service buttons open accessible Radix dialogs. The phone is an interactive illustrative preview with Home, Bookings, Care, Messages and Profile screens. Navigation collapses on mobile, scroll motion respects reduced-motion preferences, and privacy/terms dialogs are keyboard accessible. The service intro plays once per tab; the footer uses the original wordmark and symbol, with a pale wave separating the closing sections.
+Ivory, natural green and earthy neutrals, self-hosted Plus Jakarta Sans and Hanken Grotesk, original editorial imagery. Service tabs show Home, Farm and Care; service buttons open accessible Radix dialogs. The phone is an interactive illustrative preview with Home, Bookings, Care, Messages and Profile screens. Navigation collapses on mobile, scroll motion respects reduced-motion preferences, and privacy/terms dialogs are keyboard accessible. A short logo-only intro plays once per tab; the opening section uses service links instead of generated people; the footer uses the original wordmark and symbol, with a pale wave separating the closing sections.
 
 Download links have not been invented. Get started uses the contact path; Join as a Professional opens the partner application. Replace the contact path with official app store links once available. The phone's sample booking and conversation are illustrative. Artwork depicts generated people, not actual Kaylo providers or testimonials. Verify all service availability and operational brand claims before public launch.
 
@@ -19,7 +19,7 @@ Download links have not been invented. Get started uses the contact path; Join a
 
 Landing sections live in `components/`, global design rules in `app/globals.css`. Images in `public/images` were generated with the built-in image generation tool. Exact briefs are recorded in `ASSET_PROMPTS.json`. The app repository and saved APK are separate and unchanged by this website task.
 
-The public website is hosted on GitHub Pages. The original Sites configuration remains in `.openai/hosting.json` for the older deployment. No analytics, payment collection, account creation or newsletter backend is attached to this marketing site.
+The primary website at `https://kaylo.in/` is hosted by the existing Sites project configured in `.openai/hosting.json`. GitHub Pages provides a separate project-path mirror. The marketing site does not process service payments or run a newsletter backend; partner applications and protected administrative operations use the existing Supabase functions.
 
 ## Professional applications
 
@@ -27,21 +27,21 @@ The public website is hosted on GitHub Pages. The original Sites configuration r
 
 Website leads are retired in favour of applications: `submit_professional_lead` and migration 0028 remain in the app repository untouched, but the site no longer calls them.
 
-Existing submissions in the original Sites D1 `professional_applications` table remain there; no data has been removed. The original Worker remains available for that older deployment through `npm run build`.
+Existing submissions in the original Sites D1 `professional_applications` table remain there; no data has been removed. The optional Worker remains available through `npm run build`, but its legacy `/api/applications` endpoint now returns HTTP 410 without reading request bodies or writing to D1. Historical submissions are preserved. New registrations use only the protected Supabase application flow.
 
 The exact app SVG layers and splash choreography power `components/Logo.tsx`. The interactive phone uses original app PNG assets. Its bookings/messages/profile changes are an isolated in-memory demo and do not touch real accounts, payments, or providers.
 
 ## GitHub Pages deployment
 
-Live site: https://kaylolabs.github.io/kaylo-website/
+Primary website: https://kaylo.in/
 
-Admin: https://kaylolabs.github.io/kaylo-website/admin/
+Admin: https://kaylo.in/admin/
 
-Build using `NEXT_PUBLIC_BASE_PATH=/kaylo-website npm run build:pages`. Publish **only the contents of `out/`**, including `.nojekyll`, to the `main` branch of `KayloLabs/kaylo-website`. That repository holds compiled public assets, not private source history or server credentials. GitHub Pages serves its root directory.
+For the GitHub Pages project URL, build using `NEXT_PUBLIC_BASE_PATH=/kaylo-website npm run build:pages`. Publish **only the contents of `out/`**, including `.nojekyll`, to the `main` branch of `KayloLabs/kaylo-website`. That branch holds compiled public assets, not private source history or server credentials. GitHub Pages serves its root directory. The `kaylo.in` root-domain build uses an empty base path, as described below; do not deploy the project-path artifact to the domain root.
 
 All public links, images, fonts, and the admin portal support the project path. The frontend contains only the public Firebase API key and Supabase anon key. Firebase tokens stay in memory and administrator permission is checked by the existing Edge Functions. Private documents and review decisions remain protected by the backend.
 
-Set Supabase `KAYLO_PORTAL_URL=https://kaylolabs.github.io/kaylo-website/` after publication. The email URL helpers preserve the project subpath for administrator and applicant correction links.
+Set Supabase `KAYLO_PORTAL_URL=https://kaylo.in/` after publication. The email URL helpers preserve the project subpath for administrator and applicant correction links.
 
 For the identical local build run `NEXT_PUBLIC_BASE_PATH=/kaylo-website node scripts/preview-admin.mjs` and open http://127.0.0.1:3100/kaylo-website/admin/. This static preview avoids development watcher limits.
 
@@ -59,8 +59,8 @@ assembled APK are verified with SHA-256 before saving the file.
 The apps are published privately by the mobile repository's Release APKs
 workflow. The static website contains no APKs and no permanent download URLs.
 `NEXT_PUBLIC_APK_API_URL` can override the public endpoint, but is not a place
-for a password or privileged key. Preserve `/kaylo-website` as the Pages base
-path when building with `npm run build:pages`.
+for a password or privileged key. Use `/kaylo-website` as the base path only
+for the GitHub Pages project URL; `kaylo.in` uses an empty base path.
 
 Admin application details contain only a masked payout summary. Full payout values require an explicit administrator reveal through `admin-applications` and migration `0055_admin_payout_privacy.sql`; the server records an attributable audit event before returning them. Reviewers cannot reveal payout credentials. The portal hides revealed values after one minute and when leaving the application.
 
@@ -100,9 +100,12 @@ same content and root-domain canonical URLs; internal links and assets use their
 respective base paths. The sitemap contains public pages only, and admin and
 application correction pages retain their no-index/no-referrer metadata.
 
-Deploy the root artifact as static assets. It does not require the legacy
-`/api/applications` Worker; preserve existing D1 records and bindings. When the
-domain is activated, set the backend `KAYLO_PORTAL_URL=https://kaylo.in/` so
+For the existing Sites project, package the checked root artifact using
+`node scripts/build-worker.mjs` and publish `dist/`. Its Worker applies response
+security headers and serves the designed 404 page; the retired
+`/api/applications` route must stay disabled. Preserve existing D1 records and
+bindings. The separate GitHub Pages mirror receives the project-path export,
+not `dist/`. Set the backend `KAYLO_PORTAL_URL=https://kaylo.in/` so
 new email links use it. The APK backend must allow the GitHub, apex, www and
 Sites preview origins during migration; the updated function accepts an
 explicit `APK_ALLOWED_ORIGINS` comma-separated HTTPS allowlist and retains
@@ -112,4 +115,45 @@ domain DNS, HTTPS, Firebase key restrictions or live backend configuration.
 
 ### Admin authenticator support
 
-The portal supports a Firebase Identity Platform TOTP challenge and enrollment flow. Enforcement is opt-in through the private Supabase function variable `KAYLO_ADMIN_REQUIRE_MFA=true`; this is not a browser setting. Password-only sessions can receive limited enrollment eligibility but cannot access applications when enforcement is enabled. Setup secrets remain in memory, and uncertain enrollment writes are read back rather than repeated. See [the rollout and recovery runbook](docs/admin-mfa-rollout.md) for project prerequisites, activation order and live checks. Source implementation does not imply MFA has been enabled in the live project.
+The portal supports a Firebase Identity Platform TOTP challenge and enrollment flow. The matching backend requires MFA: `KAYLO_ADMIN_REQUIRE_MFA` must be absent or exactly `true`; `false` and other values reject admin requests as a configuration error. This is not a browser setting. Password-only sessions can receive limited enrollment eligibility but cannot access applications or protected operations. Setup secrets remain in memory, and uncertain enrollment writes are read back rather than repeated. See [the rollout and recovery runbook](docs/admin-mfa-rollout.md) for project prerequisites, activation order and live checks. Source implementation does not establish that the matching backend or Firebase configuration is deployed.
+
+
+## Security packaging and hosting requirements
+
+Both Pages and Worker packaging hash each page’s exact inline Next bootstrap and
+structured-data scripts. `scripts/secure-export.mjs` puts a Content Security Policy
+before those scripts; verification fails if the policy is missing or the page has
+changed. Scripts use local assets and explicit hashes, with no `unsafe-inline` or
+`unsafe-eval`. Connections are restricted to the configured Supabase origin and
+Firebase’s identity/token endpoints. Inline styles remain necessary for Motion
+and React style properties. If an API endpoint changes origin, review and update
+the CSP allowlist before publishing; never add a wildcard to make a failure go away.
+
+Admin, application-correction and account-deletion controls mount only in a
+top-level browser tab. Their request adapters also reject framed interactions
+before sending data. Administrator TOTP enrollment is supported without access to
+application data: only the server-issued enrollment step can start that flow;
+expired or interrupted setup requires a fresh sign-in. Keep server MFA enforcement
+on. Browser controls are defense in depth, never authorization.
+
+**Hosting requirement still outstanding for GitHub Pages:** HTML meta tags cannot
+enforce `frame-ancestors`, `X-Frame-Options` or `X-Content-Type-Options`. GitHub Pages
+does not let this repository set those response headers. Serve the admin portal
+through a hosting layer that emits `Content-Security-Policy: frame-ancestors
+'none'`, `X-Frame-Options: DENY` and `X-Content-Type-Options: nosniff` before public
+admin use. The optional Worker now runs before all assets and emits those headers,
+plus `Referrer-Policy: no-referrer`; deploying that source is a separate operation.
+No host or DNS setting has been changed by these source fixes. Verify response
+headers and sign-in, MFA enrollment, document preview, correction and deletion
+flows on the chosen host before marking the protection deployed.
+
+Next is pinned to 16.4.6, addressing the reviewed Next security advisories,
+including the newer root-parameter cache-disclosure fixes. Sharp is
+overridden to 0.35.5 across the dependency graph, including the optional Worker
+preview tooling. Wrangler is updated to 4.164.0; the legacy Drizzle generator’s
+transitive esbuild is constrained to the patched 0.25.12 line. The existing schema
+and D1 migrations are retained, and no migration was run. Keep the lockfile: a dependency update must run the type check,
+Node regressions and both static exports in CI before publication.
+
+Additional offline checks: `node --test scripts/secure-export.test.mjs` and
+`node --experimental-strip-types --test lib/frame-safety.test.ts lib/admin-mfa.test.ts`.

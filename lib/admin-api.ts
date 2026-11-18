@@ -1,3 +1,4 @@
+import {assertTopLevelInteraction} from './frame-safety.ts';
 import {
   type AdminAuthStep,
   type EnrollmentSession,
@@ -154,6 +155,7 @@ export async function portalReply(
   init: RequestInit = {},
   options: PortalTransportOptions = {},
 ) {
+  assertTopLevelInteraction();
   const controller = new AbortController();
   const interrupted = () =>
     options.signal?.reason instanceof PortalError ? options.signal.reason : new PortalError(

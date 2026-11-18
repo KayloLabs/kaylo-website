@@ -1,3 +1,4 @@
+import {verifyHtmlSecurity} from './secure-export.mjs';
 import {readFile,readdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -21,6 +22,7 @@ export function verifyPublicConfig(config){
 
 export async function verifyPagesExport(directory,{basePath='/kaylo-website',requireNoJekyll=true}={}){
  const root=path.resolve(directory);
+ const cspConfig=JSON.parse(await readFile(new URL('../server/kaylo-public-config.json',import.meta.url),'utf8'));
  if(basePath&&!/^\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(basePath))throw new Error('Invalid Pages base path.');
  const files=[];
  async function walk(relative=''){
@@ -46,6 +48,7 @@ export async function verifyPagesExport(directory,{basePath='/kaylo-website',req
    let claims;try{claims=JSON.parse(Buffer.from(token[1],'base64url').toString());}catch{continue;}
    if(claims?.role==='service_role')throw new Error(`Privileged Supabase key in Pages output: ${file}`);
   }
+  if(path.extname(file)==='.html')verifyHtmlSecurity(source,cspConfig);
   if(!['.html','.css'].includes(path.extname(file)))continue;
   const references=path.extname(file)==='.html'?[...source.matchAll(/\b(?:src|href)=["']([^"']+)["']/g)].map(match=>match[1]):[...source.matchAll(/url\(\s*["']?([^"')\s]+)["']?\s*\)/g)].map(match=>match[1]);
   for(let reference of references){

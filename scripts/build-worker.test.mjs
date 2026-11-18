@@ -13,7 +13,7 @@ async function fixture(run){
   for(const name of ['server','out','.openai','drizzle','dist'])await mkdir(path.join(root,name));
   await writeFile(path.join(root,'server/worker.mjs'),await readFile(new URL('../server/worker.mjs',import.meta.url)));
   await writeFile(path.join(root,'server/kaylo-public-config.json'),JSON.stringify(publicConfig));
-  await writeFile(path.join(root,'out/index.html'),'<main>Kaylo</main>');
+  await writeFile(path.join(root,'out/index.html'),'<html><head></head><body><main>Kaylo</main></body></html>');
   await writeFile(path.join(root,'.openai/hosting.json'),JSON.stringify({project_id:'test-site',d1:'DB',r2:null}));
   await writeFile(path.join(root,'drizzle/0000.sql'),'-- Existing D1 migration');
   await writeFile(path.join(root,'dist/previous-build.txt'),'keep until inputs validate');
@@ -33,7 +33,8 @@ test('built Worker is standalone ESM with validated public config and preserved 
  assert.deepEqual(await response.json(),publicConfig);
  const asset=await worker.fetch(new Request('https://kaylo.in/professionals/'),{ASSETS:{fetch:()=>new Response('static-page')}});
  assert.equal(await asset.text(),'static-page');
- assert.equal(await readFile(path.join(root,'dist/client/index.html'),'utf8'),'<main>Kaylo</main>');
+ assert.match(await readFile(path.join(root,'dist/client/index.html'),'utf8'),/data-kaylo-csp/);
+ assert.equal(JSON.parse(await readFile(path.join(root,'dist/server/wrangler.json'),'utf8')).assets.run_worker_first,true);
  assert.equal(JSON.parse(await readFile(path.join(root,'dist/.openai/hosting.json'),'utf8')).d1,'DB');
  assert.equal(JSON.parse(await readFile(path.join(root,'dist/server/wrangler.json'),'utf8')).d1_databases[0].binding,'DB');
  // Missing pages get the designed 404.html with a 404 status, not an empty body.

@@ -1,3 +1,5 @@
+import {secureHtml} from './secure-export.mjs';
+import publicConfig from '../server/kaylo-public-config.json' with {type:'json'};
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,rm,symlink} from 'node:fs/promises';
@@ -9,7 +11,7 @@ const html='<meta name="robots" content="noindex, nofollow"><meta name="referrer
 async function fixture(run,basePath='/kaylo-website'){
  const root=await mkdtemp(path.join(tmpdir(),'kaylo-pages-test-'));
  try{
-  for(const route of routes){await mkdir(path.dirname(path.join(root,route)),{recursive:true});await writeFile(path.join(root,route),html.replaceAll('/kaylo-website',basePath)+`<link rel="canonical" href="https://kaylo.in/${route.replace(/index\.html$/,'')}">`);}
+  for(const route of routes){await mkdir(path.dirname(path.join(root,route)),{recursive:true});await writeFile(path.join(root,route),secureHtml('<html><head></head><body>'+html.replaceAll('/kaylo-website',basePath)+`<link rel="canonical" href="https://kaylo.in/${route.replace(/index\.html$/,'')}"></body></html>`,publicConfig));}
   await writeFile(path.join(root,'.nojekyll'),'');await writeFile(path.join(root,'image.svg'),'<svg/>');
   const publicRoutes=routes.filter(route=>!['admin/index.html','application/update/index.html'].includes(route));
   await writeFile(path.join(root,'sitemap.xml'),`<urlset>${publicRoutes.map(route=>`<url><loc>https://kaylo.in/${route.replace(/index\.html$/,'')}</loc></url>`).join('')}</urlset>`);
@@ -20,7 +22,7 @@ async function fixture(run,basePath='/kaylo-website'){
 test('valid project-path export passes without remote requests',()=>fixture(async root=>assert.equal((await verifyPagesExport(root)).routes,13)));
 test('root-domain export verifies root-relative assets and private robots paths',()=>fixture(async root=>assert.equal((await verifyPagesExport(root,{basePath:''})).routes,13),''));
 test('old-host canonicals, private sitemap URLs and missing robots directives fail',async()=>{
- for(const oldUrl of ['https://kaylolabs.github.io/kaylo-website/','https://kayloapp.in/'])await fixture(async root=>{await writeFile(path.join(root,'index.html'),html+`<link rel="canonical" href="${oldUrl}">`);await assert.rejects(verifyPagesExport(root),/canonical URL/);});
+ for(const oldUrl of ['https://kaylolabs.github.io/kaylo-website/','https://kayloapp.in/'])await fixture(async root=>{await writeFile(path.join(root,'index.html'),secureHtml('<html><head></head><body>'+html+`<link rel="canonical" href="${oldUrl}"></body></html>`,publicConfig));await assert.rejects(verifyPagesExport(root),/canonical URL/);});
  await fixture(async root=>{await writeFile(path.join(root,'sitemap.xml'),'<urlset><url><loc>https://kaylo.in/admin/</loc></url></urlset>');await assert.rejects(verifyPagesExport(root),/public canonical/);});
  await fixture(async root=>{await writeFile(path.join(root,'robots.txt'),'User-Agent: *\nAllow: /\n');await assert.rejects(verifyPagesExport(root),/robots directive/);});
 });
@@ -32,15 +34,15 @@ test('public business and payment-policy routes must all exist in the published 
 });
 test('missing marker and broken project-root asset fail',async()=>{
  await fixture(async root=>{await rm(path.join(root,'.nojekyll'));await assert.rejects(verifyPagesExport(root),/marker/);});
- await fixture(async root=>{await writeFile(path.join(root,'index.html'),html+'<img src="/image.svg">');await assert.rejects(verifyPagesExport(root),/project path/);});
- await fixture(async root=>{await writeFile(path.join(root,'index.html'),html+'<img src="/kaylo-website/missing.png">');await assert.rejects(verifyPagesExport(root),/Broken local/);});
+ await fixture(async root=>{await writeFile(path.join(root,'index.html'),secureHtml('<html><head></head><body>'+html+'<img src="/image.svg"></body></html>',publicConfig));await assert.rejects(verifyPagesExport(root),/project path/);});
+ await fixture(async root=>{await writeFile(path.join(root,'index.html'),secureHtml('<html><head></head><body>'+html+'<img src="/kaylo-website/missing.png"></body></html>',publicConfig));await assert.rejects(verifyPagesExport(root),/Broken local/);});
 });
 test('private source, symlinks and privileged tokens cannot enter a publish artifact',async()=>{
  await fixture(async root=>{await writeFile(path.join(root,'secret.ts'),'');await assert.rejects(verifyPagesExport(root),/Private source/);});
  await fixture(async root=>{await symlink('/tmp',path.join(root,'elsewhere'));await assert.rejects(verifyPagesExport(root),/Symlinks/);});
  await fixture(async root=>{const token=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({role:'service_role'})).toString('base64url')}.signature`;await writeFile(path.join(root,'bundle.js'),`const key="${token}"`);await assert.rejects(verifyPagesExport(root),/Privileged/);});
 });
-test('private routes require no-index and no-referrer metadata',()=>fixture(async root=>{await writeFile(path.join(root,'admin/index.html'),'<main id="main"></main>');await assert.rejects(verifyPagesExport(root),/private-page metadata/);}));
+test('private routes require no-index and no-referrer metadata',()=>fixture(async root=>{await writeFile(path.join(root,'admin/index.html'),secureHtml('<html><head></head><body><main id="main"></main></body></html>',publicConfig));await assert.rejects(verifyPagesExport(root),/private-page metadata/);}));
 test('only minimal public configuration and an anon role are accepted',()=>{
  const config={firebaseApiKey:'public-firebase-key',supabaseUrl:'https://example.supabase.co',supabaseAnonKey:`header.${Buffer.from(JSON.stringify({role:'anon'})).toString('base64url')}.signature`};
  assert.doesNotThrow(()=>verifyPublicConfig(config));

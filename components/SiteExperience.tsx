@@ -29,6 +29,6 @@ export function SiteExperience({children}:{children:React.ReactNode}){
  };
  return <div className="site-experience" data-phase={phase}>
   <div ref={content} className="site-content" inert={blocked} aria-hidden={blocked||undefined}>{children}</div>
-  {blocked&&<KayloIntro label="Opening Kaylo" curtain onReveal={()=>setPhase('revealing')} onComplete={finish}/>}
+  {blocked&&<KayloIntro label="Opening Kaylo" brandOnly curtain onReveal={()=>setPhase('revealing')} onComplete={finish}/>}
  </div>;
 }

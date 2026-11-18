@@ -1,3 +1,4 @@
+import {assertTopLevelInteraction} from './frame-safety.ts';
 export type PrivacyAccountType = 'customer' | 'partner';
 export type PrivacyStatus = 'requested' | 'review_required' | 'processing' | 'completed';
 export type PrivacyRequest = {
@@ -33,6 +34,7 @@ function requestIdentity(email: string, accountType: PrivacyAccountType) {
 }
 
 async function privacyRequest(body: unknown, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  assertTopLevelInteraction();
   const controller = new AbortController();
   const cancel = () => controller.abort();
   if (signal?.aborted) throw new DOMException('Request cancelled', 'AbortError');

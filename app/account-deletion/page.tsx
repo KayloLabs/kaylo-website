@@ -1,3 +1,4 @@
+import {TopLevelOnly} from '@/components/TopLevelOnly';
 import type { Metadata } from 'next';
 import { canonicalMetadata } from '@/lib/site-metadata';
 import { UserRoundMinus } from 'lucide-react';
@@ -21,6 +22,6 @@ export default function AccountDeletionPage() {
         <li><strong>On your device:</strong> separately remove local prescriptions and any exported files. Kaylo cannot remotely erase an offline device or copies you previously shared with someone else.</li></ul>
       <p>Read our <a href={sitePath('/privacy/#retention')}>privacy policy</a> for data categories and retention details.</p>
       <div className="deletion-alternative"><h3>Can’t access your email?</h3><p>If you used phone-only sign-in, lost access to your email, or need help with an unfinished request, email <a href="mailto:kayloapp@gmail.com?subject=Kaylo%20account%20deletion%20request">kayloapp@gmail.com</a>. Include the app you use and your account email or phone number so we can arrange an alternative identity check. Never send passwords, verification codes or full payment-card details.</p></div>
-    </div><AccountDeletionForm/></div>
+    </div><TopLevelOnly><AccountDeletionForm/></TopLevelOnly></div>
   </main><Footer/></>;
 }
