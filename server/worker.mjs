@@ -10,6 +10,8 @@ const securityHeaders={
 const json=(body,status=200)=>Response.json(body,{status,headers:{...securityHeaders,'Cache-Control':'no-store'}});
 export default {async fetch(request,env){
  const url=new URL(request.url);
+ // One public address for search engines: www permanently moves to the apex.
+ if(url.hostname==='www.kaylo.in'){url.hostname='kaylo.in';url.protocol='https:';return new Response(null,{status:301,headers:{...securityHeaders,Location:url.toString()}});}
  if(url.pathname.replace(/\/$/,'')==='/api/applications'){
   // Retired: do not parse an untrusted body, touch D1 or issue a receipt.
   // The supported application flow uses the protected Supabase contract.

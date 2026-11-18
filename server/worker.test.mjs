@@ -29,3 +29,12 @@ test('unknown API and unsupported asset methods never fall through',async()=>{
  assert.equal((await worker.fetch(new Request('https://kaylo.example/admin/',{method:'POST',body:'x'.repeat(20000)}),{})).status,405);
  assert.equal((await worker.fetch(new Request('https://kaylo.example/api/kaylo-config',{method:'POST',body:'bad'}),{})).status,405);
 });
+test('www requests move permanently to the apex domain with path and query intact',async()=>{
+ for(const method of ['GET','HEAD','POST']){
+  const response=await worker.fetch(new Request('http://www.kaylo.in/services/?ref=card',{method}),{ASSETS:{fetch:()=>{throw Error('Assets must not be served on www');}}});
+  assert.equal(response.status,301);
+  assert.equal(response.headers.get('Location'),'https://kaylo.in/services/?ref=card');
+ }
+ const apex=await worker.fetch(new Request('https://kaylo.in/'),{ASSETS:{fetch:()=>new Response('home')}});
+ assert.equal(await apex.text(),'home');
+});
