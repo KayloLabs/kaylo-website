@@ -5,5 +5,14 @@
 :HL["/kaylo-website/_next/static/css/65304430d7bd6bc1.css","style"]
 :HL["/kaylo-website/_next/static/css/2683514303a3ff89.css","style"]
 :HL["/kaylo-website/_next/static/css/e86b4c339f3279d5.css","style"]
-:HL["/kaylo-website/_next/static/css/f7afffc8c3190ba5.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"admin","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"8BOuG7jtnlKXerm8wz0zH"}
+:HL["/kaylo-website/_next/static/css/b46a0acced1be039.css","style"]
+:HL["/kaylo-website/app-art/mode_home.png","image"]
+:HL["/kaylo-website/app-art/icon_electric.png","image"]
+:HL["/kaylo-website/app-art/icon_plumb.png","image"]
+:HL["/kaylo-website/app-art/icon_carpentry.png","image"]
+:HL["/kaylo-website/app-art/icon_garden.png","image"]
+:HL["/kaylo-website/app-art/icon_coconut.png","image"]
+:HL["/kaylo-website/app-art/mode_farm.png","image"]
+:HL["/kaylo-website/app-art/mode_care.png","image"]
+:HL["/kaylo-website/_next/static/css/fd7cd336a7f23ebc.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"admin","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"QVwPFL7GtpRWtSmPVHE9p"}
