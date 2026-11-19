@@ -3,6 +3,11 @@ import type { Metadata } from 'next';
 // Canonical URLs stay on the public domain in both root and Pages exports.
 // Asset/link routing remains independent through NEXT_PUBLIC_BASE_PATH.
 export const canonicalSiteOrigin = 'https://kaylo.in';
+// Official profiles that Kaylo controls and that link back to kaylo.in.
+// Add a profile only after confirming both directions of the link.
+export const officialProfiles = [
+  { name: 'LinkedIn', url: 'https://www.linkedin.com/company/kayloapp/' },
+] as const;
 export const publicPagePaths = [
   '/', '/about/', '/services/', '/professionals/', '/pricing/', '/contact/',
   '/download/', '/privacy/', '/account-deletion/', '/terms/', '/refund-policy/',
@@ -108,6 +113,7 @@ export const homeStructuredData = {
         height: 512,
       },
       description: 'A Kerala-rooted local services platform connecting customers with professionals for home, farm and care needs.',
+      sameAs: officialProfiles.map(profile => profile.url),
     },
     {
       '@type': 'WebSite',

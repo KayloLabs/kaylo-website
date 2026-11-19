@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
-  canonicalMetadata, canonicalSiteOrigin, publicPagePaths, publicPages,
+  canonicalMetadata, canonicalSiteOrigin, publicPagePaths, publicPages, officialProfiles,
   homeStructuredData, breadcrumbStructuredData, serializeStructuredData,
 } from './site-metadata.ts';
 
@@ -45,9 +45,10 @@ test('homepage identity is consistent without unsupported company or review clai
   assert.equal(organization.url, `${canonicalSiteOrigin}/`);
   assert.equal(organization.logo?.url, `${canonicalSiteOrigin}/icons/kaylo-mark-v2-512.png`);
   assert.equal(website.url, organization.url);
+  assert.deepEqual(organization.sameAs, ['https://www.linkedin.com/company/kayloapp/']);
   assert.deepEqual(website.publisher, { '@id': organization['@id'] });
   const encoded = JSON.stringify(homeStructuredData);
-  for (const unsupported of ['aggregateRating', 'reviewCount', 'legalName', 'taxID', 'address', 'sameAs', 'SearchAction']) {
+  for (const unsupported of ['aggregateRating', 'reviewCount', 'legalName', 'taxID', 'address', 'SearchAction']) {
     assert.equal(encoded.includes(`"${unsupported}"`), false);
   }
 });
@@ -81,4 +82,12 @@ test('private pages retain noindex and do not inherit homepage canonicals or soc
     assert.match(source, /referrer:'no-referrer'/);
     assert.equal(source.includes('canonicalMetadata'), false);
   }
+});
+
+test('official profiles are HTTPS company pages linked from the footer', async () => {
+  const footer = await readFile(new URL('../components/Footer.tsx', import.meta.url), 'utf8');
+  for (const profile of officialProfiles) {
+    assert.match(profile.url, /^https:\/\/www\.linkedin\.com\/company\/[a-z0-9-]+\/$/);
+  }
+  assert.match(footer, /officialProfiles\.map/);
 });
