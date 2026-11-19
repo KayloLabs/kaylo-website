@@ -6,7 +6,7 @@ export function Hero() {
  return <section className="hero hero-playful hero-clean" id="home">
   <div className="hero-composition wrap">
    <div className="hero-copy">
-    <h1><span className="hero-line hero-line-first">Skilled people.</span>{' '}
+    <h1><span className="sr-only">Kaylo: </span><span className="hero-line hero-line-first">Skilled people.</span>{' '}
      <span className="hero-line hero-line-second"><em className="hero-accent">Right when</em></span>{' '}
      <span className="hero-line hero-line-third">you need them.</span></h1>
     <p className="hero-description">Kaylo connects you with trusted local professionals in Kerala for the jobs that keep everyday life moving.</p>
