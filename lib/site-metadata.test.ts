@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import {
-  canonicalMetadata, canonicalSiteOrigin, publicPagePaths, publicPages, officialProfiles,
+  canonicalMetadata, canonicalSiteOrigin, publicPagePaths, publicPages, officialProfiles, sitemapImages,
   homeStructuredData, breadcrumbStructuredData, serializeStructuredData,
 } from './site-metadata.ts';
 
@@ -102,4 +102,14 @@ test('official profiles are canonical HTTPS profile pages linked from the footer
     }
   }
   assert.match(footer, /officialProfiles\.map/);
+});
+
+test('sitemap images belong to public pages and exist locally', async () => {
+  for (const [path, images] of Object.entries(sitemapImages)) {
+    assert.ok((publicPagePaths as readonly string[]).includes(path));
+    for (const image of images ?? []) {
+      assert.match(image, /^\/(images|app-art)\/[a-z0-9_-]+\.(png|jpe?g|webp)$/);
+      await access(new URL(`../public${image}`, import.meta.url));
+    }
+  }
 });

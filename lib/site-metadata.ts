@@ -13,6 +13,18 @@ export const publicPagePaths = [
   '/download/', '/privacy/', '/account-deletion/', '/terms/', '/refund-policy/',
 ] as const;
 
+// Meaningful images on each page, listed in the sitemap so Google Images can
+// find them. Decorative icons with empty alt text are left out on purpose.
+export const sitemapImages: Partial<Record<(typeof publicPagePaths)[number], readonly string[]>> = {
+  '/': [
+    '/images/kaylo-social.png',
+    '/app-art/hero_coconut_climber_clay_v2.png',
+    '/images/craftsman.jpg',
+    '/images/neighbourhood.jpg',
+  ],
+  '/professionals/': ['/images/craftsman.jpg'],
+};
+
 export type PublicPagePath = typeof publicPagePaths[number];
 
 export const publicPages: Record<PublicPagePath, { title: string; description: string }> = {
