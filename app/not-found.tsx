@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ArrowLeft } from 'lucide-react';
 import { Wordmark } from '@/components/Logo';
 import { sitePath } from '@/lib/site-path';
+import { previewArt } from '@/lib/responsive-images';
 import './not-found.css';
 
 export const metadata: Metadata = {
@@ -21,11 +22,11 @@ export default function NotFound() {
         </svg>
         <div className="nf-number">
           <span>4</span>
-          <span className="nf-zero"><img src={sitePath('/app-art/mode_home.png')} alt=""/></span>
+          <span className="nf-zero"><img {...previewArt('mode_home', 114)} loading="eager" alt=""/></span>
           <span>4</span>
         </div>
         {crew.map((art, index) => (
-          <img key={art} className={`nf-crew nf-crew-${index + 1}`} src={sitePath(`/app-art/${art}.png`)} alt=""/>
+          <img key={art} className={`nf-crew nf-crew-${index + 1}`} {...previewArt(art, 104)} loading="eager" alt=""/>
         ))}
       </div>
       <h1>This page is out on a job.</h1>
