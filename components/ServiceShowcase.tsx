@@ -6,9 +6,9 @@ import {motion, useInView, useReducedMotion} from 'motion/react';
 import {sitePath} from '../lib/site-path';
 
 const areas = [
- {name: 'Home', art: 'showcase-home-tool', Icon: House, services: ['Electrical work', 'Plumbing', 'Cleaning', 'Repairs'], detail: 'Repairs, cleaning & everyday fixes'},
- {name: 'Farm', art: 'showcase-farm-sprout', Icon: Leaf, services: ['Coconut harvesting', 'Gardening', 'Farm support'], detail: 'Land, gardens & the next harvest'},
- {name: 'Care', art: 'showcase-care-stethoscope', Icon: Heart, services: ['Doctor appointments', 'Caregivers', 'Everyday assistance'], detail: 'Doctors, caregivers & your loved ones'},
+ {name: 'Home', art: 'showcase-home-tool', full: 1280, Icon: House, services: ['Electrical work', 'Plumbing', 'Cleaning', 'Repairs'], detail: 'Repairs, cleaning & everyday fixes'},
+ {name: 'Farm', art: 'showcase-farm-sprout', full: 1254, Icon: Leaf, services: ['Coconut harvesting', 'Gardening', 'Farm support'], detail: 'Land, gardens & the next harvest'},
+ {name: 'Care', art: 'showcase-care-stethoscope', full: 1254, Icon: Heart, services: ['Doctor appointments', 'Caregivers', 'Everyday assistance'], detail: 'Doctors, caregivers & your loved ones'},
 ];
 
 export function ServiceShowcase() {
@@ -28,7 +28,7 @@ export function ServiceShowcase() {
     <p>{area.detail}</p>
     <span className="showcase-arrow" aria-hidden="true"><ArrowUpRight/></span>
     <span className="showcase-art-shadow" aria-hidden="true"/>
-    <img className="showcase-art" src={sitePath(`/images/${area.art}.png`)} alt="" width="1024" height="1024" loading="lazy"/>
+    <img className="showcase-art" src={sitePath(`/images/${area.art}-640.webp`)} srcSet={`${sitePath(`/images/${area.art}-640.webp`)} 640w, ${sitePath(`/images/${area.art}-1280.webp`)} ${area.full}w`} sizes="290px" alt="" width="1024" height="1024" loading="lazy"/>
     <div className="showcase-ribbon" aria-hidden="true"><div className="showcase-ribbon-track">
      {[0, 1].map(copy => <span className="showcase-ribbon-copy" key={copy}>{area.services.map(service => <span key={service}>{service}<area.Icon size={13} strokeWidth={1.6}/></span>)}</span>)}
     </div></div>
