@@ -45,7 +45,10 @@ test('homepage identity is consistent without unsupported company or review clai
   assert.equal(organization.url, `${canonicalSiteOrigin}/`);
   assert.equal(organization.logo?.url, `${canonicalSiteOrigin}/icons/kaylo-mark-v2-512.png`);
   assert.equal(website.url, organization.url);
-  assert.deepEqual(organization.sameAs, ['https://www.linkedin.com/company/kayloapp/']);
+  assert.deepEqual(organization.sameAs, [
+    'https://www.linkedin.com/company/kayloapp/',
+    'https://www.instagram.com/kaylo_app/',
+  ]);
   assert.deepEqual(website.publisher, { '@id': organization['@id'] });
   const encoded = JSON.stringify(homeStructuredData);
   for (const unsupported of ['aggregateRating', 'reviewCount', 'legalName', 'taxID', 'address', 'SearchAction']) {
@@ -84,10 +87,19 @@ test('private pages retain noindex and do not inherit homepage canonicals or soc
   }
 });
 
-test('official profiles are HTTPS company pages linked from the footer', async () => {
+test('official profiles are canonical HTTPS profile pages linked from the footer', async () => {
   const footer = await readFile(new URL('../components/Footer.tsx', import.meta.url), 'utf8');
   for (const profile of officialProfiles) {
-    assert.match(profile.url, /^https:\/\/www\.linkedin\.com\/company\/[a-z0-9-]+\/$/);
+    const url = new URL(profile.url);
+    assert.equal(url.protocol, 'https:');
+    assert.equal(url.search, '');
+    assert.equal(url.hash, '');
+    if (profile.name === 'LinkedIn') {
+      assert.match(profile.url, /^https:\/\/www\.linkedin\.com\/company\/[a-z0-9-]+\/$/);
+    } else {
+      assert.equal(profile.name, 'Instagram');
+      assert.match(profile.url, /^https:\/\/www\.instagram\.com\/[a-z0-9_.]+\/$/);
+    }
   }
   assert.match(footer, /officialProfiles\.map/);
 });

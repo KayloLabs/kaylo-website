@@ -3,10 +3,10 @@ import type { Metadata } from 'next';
 // Canonical URLs stay on the public domain in both root and Pages exports.
 // Asset/link routing remains independent through NEXT_PUBLIC_BASE_PATH.
 export const canonicalSiteOrigin = 'https://kaylo.in';
-// Official profiles that Kaylo controls and that link back to kaylo.in.
-// Add a profile only after confirming both directions of the link.
+// Official profiles supplied by Kaylo. Use canonical URLs without share tracking.
 export const officialProfiles = [
   { name: 'LinkedIn', url: 'https://www.linkedin.com/company/kayloapp/' },
+  { name: 'Instagram', url: 'https://www.instagram.com/kaylo_app/' },
 ] as const;
 export const publicPagePaths = [
   '/', '/about/', '/services/', '/professionals/', '/pricing/', '/contact/',
