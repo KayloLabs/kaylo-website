@@ -3,6 +3,7 @@ import type {Metadata} from 'next';
 import AdminExperience from '../../components/admin/AdminExperience';
 import './admin.css';
 import './finance.css';
+import './payouts.css';
 import './privacy.css';
 import './support.css';
 import './intro.css';

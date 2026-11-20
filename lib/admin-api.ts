@@ -1,3 +1,4 @@
+import type { PayoutAction } from './manual-payouts.ts';
 import {assertTopLevelInteraction} from './frame-safety.ts';
 import {
   type AdminAuthStep,
@@ -147,7 +148,7 @@ export class PortalError extends Error {
     this.outcomeUnknown = outcomeUnknown;
   }
 }
-export type FinanceAction = 'list' | 'detail' | 'refund' | 'resolve_dispute' | 'replay_refund' | 'reconciliation' | 'review_exception' | 'retry_reconciliation';
+export type FinanceAction = 'list' | 'detail' | 'refund' | 'resolve_dispute' | 'replay_refund' | 'reconciliation' | 'review_exception' | 'retry_reconciliation' | PayoutAction;
 export type PortalTransportOptions = { timeoutMs?: number; signal?: AbortSignal; write?: boolean };
 /** Bound both response headers and body. Aborting a write does not undo its server transaction. */
 export async function portalReply(
@@ -222,6 +223,20 @@ export async function portalReply(
   }
 }
 const messages: Record<string, string> = {
+  PAYOUT_BANK_DETAILS_REQUIRED: "A complete bank account and IFSC are required before preparing a transfer.",
+  PAYOUT_BANK_REFERENCE_REQUIRED: "Enter the bank transaction reference.",
+  PAYOUT_BANK_REFERENCE_USED: "This bank reference is already recorded. Review the existing payout instead of recording it again.",
+  PAYOUT_BENEFICIARY_CHANGED: "The bank account changed after verification. Review the current details and prepare a new verified payout.",
+  PAYOUT_BENEFICIARY_VERIFICATION_REQUIRED: "Verify the current bank account before preparing this payout.",
+  PAYOUT_EARNING_INELIGIBLE: "One or more earnings are no longer eligible. Refresh and review payments, refunds and disputes.",
+  PAYOUT_EARNING_RESERVED: "An earning is already reserved by another payout. Refresh the payout records.",
+  PAYOUT_EVIDENCE_REQUIRED: "An evidence reference and audit note are required.",
+  PAYOUT_INDEPENDENT_APPROVER_REQUIRED: "A different authorised administrator must perform this check.",
+  PAYOUT_NOT_FOUND: "This payout could not be found in the current payment mode.",
+  PAYOUT_REQUEST_CONFLICT: "This request reference already has different details. Review its recorded result before continuing.",
+  PAYOUT_REQUEST_INVALID: "Check the payout fields and try again.",
+  PAYOUT_STATE_CONFLICT: "The payout changed or this action is not available in its current state. Refresh the record.",
+  PAYOUT_WORKER_INELIGIBLE: "This professional is not eligible for a new payout. Review their account status.",
   SUPPORT_UNAVAILABLE: 'Support is unavailable. Refresh its current status or retry the same saved update.',
   SUPPORT_VERSION_CONFLICT: 'This request changed while you were reviewing it. Refresh the request before editing.',
   SUPPORT_RATE_LIMIT: 'The support request limit has been reached. Check the existing request history.',
@@ -848,7 +863,7 @@ export class AdminSession {
     if (this.role !== 'admin') return Promise.reject(new PortalError(messages.ADMIN_ROLE_REQUIRED, 403, 'ADMIN_ROLE_REQUIRED'));
     // The server verifies current admin membership and MFA for every request.
     // Finance reads have their own namespace; no financial write is retried here.
-    const key = ['list', 'detail', 'reconciliation'].includes(action)
+    const key = ['list', 'detail', 'reconciliation', 'payout_workers', 'payout_candidates', 'payout_list', 'payout_detail'].includes(action)
       ? `finance:${JSON.stringify({ ...params, action })}` : null;
     if (key) {
       const existing = this.reads.get(key);
@@ -891,7 +906,7 @@ export class AdminSession {
     const finance = endpoint === 'finance-operations';
     const privacy = endpoint === 'privacy-operations';
     const write = endpoint === 'support-requests' ? action === 'admin_update' : privacy ? action === 'process' : finance
-      ? ['refund', 'resolve_dispute', 'replay_refund', 'review_exception', 'retry_reconciliation'].includes(action)
+      ? (['refund', 'resolve_dispute', 'replay_refund', 'review_exception', 'retry_reconciliation'].includes(action) || (action.startsWith('payout_') && !['payout_workers', 'payout_candidates', 'payout_list', 'payout_detail'].includes(action)))
       : ['review', 'retry_delivery'].includes(action);
     try {
       const { response, body } = await this.reply(
